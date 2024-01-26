@@ -71,7 +71,8 @@ for config in config_permutations:
     setting_obj.print_setup_summary()
     mean_score, std_score = setting_obj.load_run_save_evaluate()
     print('************ Overall Performance ************')
-    print('MLP Accuracy: ' + str(mean_score) + ' +/- ' + str(std_score))
+#   print('MLP Accuracy: ' + str(mean_score) + ' +/- ' + str(std_score))
+    print('MLP Accuracy: {:.2f}% +/- {:.2f}%.'.format(mean_score * 100, std_score * 100))
     print('************ Finish ************')
     # ------------------------------------------------------
 
