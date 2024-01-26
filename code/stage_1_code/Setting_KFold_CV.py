@@ -8,6 +8,8 @@ Concrete SettingModule class for a specific experimental SettingModule
 from code.base_class.setting import setting
 from sklearn.model_selection import KFold
 import numpy as np
+import torch
+from torch import nn
 
 class Setting_KFold_CV(setting):
     fold = 3
@@ -16,8 +18,6 @@ class Setting_KFold_CV(setting):
         
         # load dataset
         loaded_data = self.dataset.load()
-        
-        kf = KFold(n_splits=self.fold, shuffle=True)
         
         fold_count = 0
         score_list = []
