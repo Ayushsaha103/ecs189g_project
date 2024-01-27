@@ -7,6 +7,7 @@ Concrete MethodModule class for a specific learning MethodModule
 
 from code.base_class.method import method
 from code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
+from sklearn.metrics import precision_score, recall_score, f1_score
 import torch
 from torch import nn
 import numpy as np
@@ -48,11 +49,18 @@ class Method_MLP(method, nn.Module):
         # check here for nn.Softmax doc: https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
         self.activation_func_2 = nn.Softmax(dim=1)
 
-        # Initialize lists to store losses, accuracies
+        # Metrics
         self.train_losses = []
         self.train_accuracies = []
+        self.train_precisions = []
+        self.train_recalls = []
+        self.train_f1s = []
+        self.val_losses = []
+        self.val_accuracies = []
+        self.precision_scores = []
+        self.recall_scores = []
+        self.f1_scores = []
         self.test_file_accuracies = []
-
 
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
@@ -71,6 +79,12 @@ class Method_MLP(method, nn.Module):
     # backward error propagation will be implemented by pytorch automatically
     # so we don't need to define the error backpropagation function here
 
+    @staticmethod
+    def evaluate_metrics(true_labels, predicted_labels, average="weighted"):
+        precision = precision_score(true_labels, predicted_labels, average=average, zero_division=0)
+        recall = recall_score(true_labels, predicted_labels, average=average, zero_division=0)
+        f1 = f1_score(true_labels, predicted_labels, average=average, zero_division=0)
+        return precision, recall, f1
 
     def train(self, X, y, test_file_data: None):
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
@@ -120,6 +134,10 @@ class Method_MLP(method, nn.Module):
                     accuracy_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
                     curr_accuracy = accuracy_evaluator.evaluate()
                     epoch_acc += curr_accuracy
+                    precision, recall, f1 = self.evaluate_metrics(y_true, y_pred.max(1)[1])
+                    self.train_precisions.append(precision)
+                    self.train_recalls.append(recall)
+                    self.train_f1s.append(f1)
 
             epoch_loss /= num_batches
             epoch_acc /= num_batches
@@ -143,29 +161,55 @@ class Method_MLP(method, nn.Module):
 
     def save_and_show_graph(self, fold_count: int):
         # After loop, plot recorded metrics
-        fig = plt.figure(figsize=(20, 4))
+        fig = plt.figure(figsize=(20, 10))
+        fig.suptitle(f'LR: {self.learning_rate} | Batch Size: {self.batch_size}'
+                     f' | Loss: {self.loss_function} | Optimizer: {self.optimizer}', fontsize=16)
 
-        fig.suptitle(f'LR: {self.learning_rate} | Batch Size: {self.batch_size} | Loss: {self.loss_function} | Optimizer: {self.optimizer}')
-        plt.subplot(1, 3, 1)
+        plt.subplot(2, 3, 1)
         plt.plot(self.train_losses, label="Training Loss", color='b')
-        plt.title('Train Loss over epochs')
+        plt.title('Train Loss over time')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend()
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(2, 3, 2)
         plt.plot(self.train_accuracies, label="Training Accuracy", color='g')
-        plt.title('Train Accuracy over epochs')
+        plt.title('Train Accuracy over time')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
         plt.legend()
 
-        plt.subplot(1, 3, 3)
+        plt.subplot(2, 3, 3)
         plt.plot(self.test_file_accuracies, label="Test File Accuracy", color='r')
-        plt.title('Test File Accuracy over epochs')
+        plt.title('Test File Accuracy over time')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
         plt.legend()
+
+        # Plot for precision, recall, and F1 score
+        plt.subplot(2, 3, 4)
+        plt.plot(self.train_precisions, label="Training Precision", color='purple')
+        plt.title('Train Precision over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Precision')
+        plt.legend()
+
+        plt.subplot(2, 3, 5)
+        plt.plot(self.train_recalls, label="Training Recall", color='orange')
+        plt.title('Train Recall over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Recall')
+        plt.legend()
+
+        plt.subplot(2, 3, 6)
+        plt.plot(self.train_f1s, label="Training F1 Score", color='pink')
+        plt.title('Train F1 Score over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('F1 Score')
+        plt.legend()
+
+        # Adjust params so subplots fit in figure area
+        plt.tight_layout(rect=(0, 0.03, 1, 0.95))
 
         # Note: loss, accuracy plots generated here (nothing to be updated in main.py)
         folder_path = os.path.join(self.save_dir, 'graphs/')
@@ -174,13 +218,21 @@ class Method_MLP(method, nn.Module):
         plt.savefig(os.path.join(folder_path, f'fold-{fold_count}.png'))
         plt.show()
 
-    def test(self, X):
+    def test(self, X, y):
         # do the testing, and result the result
         y_pred = self.forward(torch.FloatTensor(np.array(X)))
         # convert the probability distributions to the corresponding labels
         # instances will get the labels corresponding to the largest probability
-        return y_pred.max(1)[1]
+       # return y_pred.max(1)[1]
 
+        # y_true = torch.FloatTensor(np.array(y))
+        y_true = torch.LongTensor(np.array(y))  # This should be LongTensor for classification targets
+
+        # Get numpy arrays from tensors for evaluation
+        y_true_np = y_true.numpy()
+        y_pred_np = y_pred.max(1)[1].numpy()
+        precision, recall, f1 = self.evaluate_metrics(y_true_np, y_pred_np)
+        return y_pred.max(1)[1], precision, recall, f1
 
     def reset(self):
         @torch.no_grad()
@@ -194,8 +246,6 @@ class Method_MLP(method, nn.Module):
         self.train_accuracies = []
         self.train_losses = []
 
-
-
     def run(self, fold_count: int):
         print('method running...')
         self.reset()
@@ -205,5 +255,14 @@ class Method_MLP(method, nn.Module):
         print('--saving graphs...')
         self.save_and_show_graph(fold_count)
         print('--start testing...')
-        pred_y = self.test(self.data['test']['X'])
-        return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
+        # pred_y = self.test(self.data['test']['X'])
+        pred_y, precision, recall, f1 = self.test(self.data['test']['X'], self.data['test']['y'])
+
+        # return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
+        return {
+            'pred_y': pred_y,
+            'true_y': self.data['test']['y'],
+            'precision': precision,
+            'recall': recall,
+            'f1': f1
+        }
