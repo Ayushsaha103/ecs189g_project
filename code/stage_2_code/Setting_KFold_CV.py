@@ -10,7 +10,7 @@ from sklearn.model_selection import KFold
 import numpy as np
 
 class Setting_KFold_CV(setting):
-    fold = 2
+    fold = 3
     
     def load_run_save_evaluate(self):
         

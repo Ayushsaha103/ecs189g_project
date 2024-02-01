@@ -61,6 +61,9 @@ class Method_MLP(method, nn.Module):
         self.recall_scores = []
         self.f1_scores = []
         self.test_file_accuracies = []
+        self.test_file_precisions = []
+        self.test_file_recalls = []
+        self.test_file_f1s = []
 
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
@@ -97,6 +100,18 @@ class Method_MLP(method, nn.Module):
         # Ensure metrics reset at start of training
         self.train_losses = []
         self.train_accuracies = []
+        self.train_precisions = []
+        self.train_recalls = []
+        self.train_f1s = []
+        self.val_losses = []
+        self.val_accuracies = []
+        self.precision_scores = []
+        self.recall_scores = []
+        self.f1_scores = []
+        self.test_file_accuracies = []
+        self.test_file_precisions = []
+        self.test_file_recalls = []
+        self.test_file_f1s = []
 
         # it will be an iterative gradient updating process
         # we don't do mini-batch, we use the whole input as one batch
@@ -153,6 +168,10 @@ class Method_MLP(method, nn.Module):
                     test_file_y_true = torch.LongTensor(np.array(test_file_data['y']))
                     accuracy_evaluator.data = {'true_y': test_file_y_true, 'pred_y': test_file_y_pred.max(1)[1]}
                     self.test_file_accuracies.append(accuracy_evaluator.evaluate())
+                    precision, recall, f1 = self.evaluate_metrics(test_file_y_true, test_file_y_pred.max(1)[1])
+                    self.test_file_precisions.append(precision)
+                    self.test_file_recalls.append(recall)
+                    self.test_file_f1s.append(f1)
 
             if epoch % 20 == 0:
                 print('Epoch:', epoch, 'Accuracy:', epoch_acc, 'Loss:', epoch_loss, end=' | ')
@@ -165,21 +184,21 @@ class Method_MLP(method, nn.Module):
         fig.suptitle(f'LR: {self.learning_rate} | Batch Size: {self.batch_size}'
                      f' | Loss: {self.loss_function} | Optimizer: {self.optimizer}', fontsize=16)
 
-        plt.subplot(2, 3, 1)
+        plt.subplot(3, 3, 1)
         plt.plot(self.train_losses, label="Training Loss", color='b')
         plt.title('Train Loss over time')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend()
 
-        plt.subplot(2, 3, 2)
+        plt.subplot(3, 3, 2)
         plt.plot(self.train_accuracies, label="Training Accuracy", color='g')
         plt.title('Train Accuracy over time')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
         plt.legend()
 
-        plt.subplot(2, 3, 3)
+        plt.subplot(3, 3, 3)
         plt.plot(self.test_file_accuracies, label="Test File Accuracy", color='r')
         plt.title('Test File Accuracy over time')
         plt.xlabel('Epoch')
@@ -187,23 +206,44 @@ class Method_MLP(method, nn.Module):
         plt.legend()
 
         # Plot for precision, recall, and F1 score
-        plt.subplot(2, 3, 4)
+        plt.subplot(3, 3, 4)
         plt.plot(self.train_precisions, label="Training Precision", color='purple')
         plt.title('Train Precision over time')
         plt.xlabel('Epoch')
         plt.ylabel('Precision')
         plt.legend()
 
-        plt.subplot(2, 3, 5)
+        plt.subplot(3, 3, 5)
         plt.plot(self.train_recalls, label="Training Recall", color='orange')
         plt.title('Train Recall over time')
         plt.xlabel('Epoch')
         plt.ylabel('Recall')
         plt.legend()
 
-        plt.subplot(2, 3, 6)
+        plt.subplot(3, 3, 6)
         plt.plot(self.train_f1s, label="Training F1 Score", color='pink')
         plt.title('Train F1 Score over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('F1 Score')
+        plt.legend()
+
+        plt.subplot(3, 3, 7)
+        plt.plot(self.train_precisions, label="Test File Precision", color='purple')
+        plt.title('Test File Precision over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Precision')
+        plt.legend()
+
+        plt.subplot(3, 3, 8)
+        plt.plot(self.train_recalls, label="Test File Recall", color='orange')
+        plt.title('Test File Recall over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Recall')
+        plt.legend()
+
+        plt.subplot(3, 3, 9)
+        plt.plot(self.train_f1s, label="Test File F1 Score", color='pink')
+        plt.title('Test File F1 Score over time')
         plt.xlabel('Epoch')
         plt.ylabel('F1 Score')
         plt.legend()
@@ -211,7 +251,7 @@ class Method_MLP(method, nn.Module):
         # Adjust params so subplots fit in figure area
         plt.tight_layout(rect=(0, 0.03, 1, 0.95))
 
-        # Note: loss, accuracy plots generated here (nothing to be updated in main.py)
+        # Note: loss, accuracy plots generated here (nothing to be updated in search.py)
         folder_path = os.path.join(self.save_dir, 'graphs/')
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
