@@ -35,7 +35,7 @@ class Setting_KFold_CV(setting):
 
             # test_file is from test file
             X_test_file = np.array(test_file['X'])
-            Y_test_file = np.array(train_file['y'])
+            Y_test_file = np.array(test_file['y'])
 
             # run MethodModule
             self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}, 'test_file': {'X': X_test_file, 'y': Y_test_file}}
