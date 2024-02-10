@@ -59,7 +59,7 @@ for config in config_permutations:
 
     method_obj = Method_CNN('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
                             config['hidden_units'], output_shape, config['lr'], config['batch_size'],
-                            config['loss_function'], config['optimizer'], max_epoch=50, output_layer_input_channels=output_layer_input_channels)
+                            config['loss_function'], config['optimizer'], max_epoch=1, output_layer_input_channels=output_layer_input_channels)
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra
