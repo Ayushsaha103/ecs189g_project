@@ -133,6 +133,9 @@ class Method_CNN(method, nn.Module):
         for epoch in range(self.max_epoch):
             epoch_loss = 0
             epoch_acc = 0
+            epoch_precision = 0
+            epoch_recall = 0
+            epoch_f1s = 0
             num_batches = np.ceil(X.shape[0] / self.batch_size)
 
             for batch_index in range(0, X.shape[0], self.batch_size):
@@ -152,20 +155,28 @@ class Method_CNN(method, nn.Module):
                 train_loss.backward()
                 optimizer.step()
                 epoch_loss += train_loss.item()
+
                 with torch.no_grad():
                     self.metrics_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
                     curr_accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
                     epoch_acc += curr_accuracy
-                    self.train_precisions.append(precision)
-                    self.train_recalls.append(recall)
-                    self.train_f1s.append(f1)
+                    epoch_precision += precision
+                    epoch_recall += recall
+                    epoch_f1s += f1
+
 
             epoch_loss /= num_batches
             epoch_acc /= num_batches
+            epoch_precision /= num_batches
+            epoch_recall /= num_batches
+            epoch_f1s /= num_batches
 
             # Record loss for curr epoch/iteration
             self.train_losses.append(epoch_loss)
             self.train_accuracies.append(epoch_acc)
+            self.train_precisions.append(epoch_precision)
+            self.train_recalls.append(epoch_recall)
+            self.train_f1s.append(epoch_f1s)
 
             # Record test file accuracy
             if test_data:
