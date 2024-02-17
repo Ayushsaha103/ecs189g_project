@@ -21,7 +21,7 @@ torch.manual_seed(2)
 
 configurations = {
     'lr': [1e-3],
-    'batch_size': [32],
+    'batch_size': [1024],
     'loss_function': [nn.CrossEntropyLoss],
     'optimizer': [
         torch.optim.Adam
@@ -32,7 +32,7 @@ configurations = {
 # params
 input_shape = 1
 output_shape = 10
-output_layer_input_channels = 500
+output_layer_input_channels = 180
 max_epoch = 50
 #
 

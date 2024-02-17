@@ -1,3 +1,5 @@
+import torch
+
 from code.base_class.setting import setting
 from sklearn.model_selection import KFold
 import numpy as np
@@ -7,6 +9,20 @@ class Setting_KFold_CV(setting):
     fold = 2
 
     def load_run_save_evaluate(self):
+
+        device = None
+
+        if torch.backends.mps.is_available():
+            device = torch.device("mps")
+        elif torch.cuda.is_available():
+            device = torch.device('cuda')
+        else:
+            device = torch.device('cpu')
+
+        print("Using device: ", device)
+
+        self.method.to(device)
+
         # load dataset
         loaded_data = self.dataset.load()
         # train test here are from the seperate datas
@@ -32,13 +48,24 @@ class Setting_KFold_CV(setting):
             # run MethodModule
             self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test},
                                 'test_data': {'X': X_test_data, 'y': Y_test_data}}
+
+            for k, v in self.method.data.items():
+                for vk, d in v.items():
+                    nd = torch.from_numpy(d)
+                    if vk == 'X':
+                        nd = nd.float()
+                    else:
+                        nd = nd.long()
+                    nd = nd.to(device)
+                    v[vk] = nd
+
+
             learned_result = self.method.run(fold_count)
 
             # save raw ResultModule
             self.result.data = learned_result
             self.result.fold_count = fold_count
             self.result.save()
-
 
             score_list.append(learned_result['accuracy'])
 

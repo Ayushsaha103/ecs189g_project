@@ -1,6 +1,7 @@
 '''
 Concrete SettingModule class for a specific experimental SettingModule
 '''
+import torch
 
 # Copyright (c) 2017-Current Jiawei Zhang <jiawei@ifmlab.org>
 # License: TBD
@@ -13,6 +14,11 @@ class Setting_KFold_CV(setting):
     fold = 3
     
     def load_run_save_evaluate(self):
+
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+        else:
+            device = torch.device('cpu')
         
         # load dataset
         loaded_data = self.dataset.load()
@@ -33,9 +39,11 @@ class Setting_KFold_CV(setting):
             X_train, X_test = np.array(train_file['X'])[train_index], np.array(train_file['X'])[test_index]
             y_train, y_test = np.array(train_file['y'])[train_index], np.array(train_file['y'])[test_index]
 
+
             # test_file is from test file
             X_test_file = np.array(test_file['X'])
             Y_test_file = np.array(test_file['y'])
+
 
             # run MethodModule
             self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}, 'test_file': {'X': X_test_file, 'y': Y_test_file}}

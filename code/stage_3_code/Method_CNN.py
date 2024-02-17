@@ -28,6 +28,7 @@ class Method_CNN(method, nn.Module):
     save_dir = ''
     loss_function = nn.CrossEntropyLoss
     optimizer = torch.optim.Adam
+    device = 'cpu'
 
     # it defines the the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
@@ -102,12 +103,18 @@ class Method_CNN(method, nn.Module):
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
 
+    def to(self, device):
+        self.device = device
+        nn.Module.to(self, device)
+
     def forward(self, x):
         c1 = self.conv_block_1(x)
         c2 = self.conv_block_2(c1)
         # c3 = self.conv_block_3(c2)
         y_pred = self.classifier(c2)
         return y_pred
+
+
 
     def train(self, X, y, test_data: None):
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
@@ -144,8 +151,8 @@ class Method_CNN(method, nn.Module):
                 batch_X = X[batch_index:batch_index + self.batch_size]
                 batch_y = y[batch_index:batch_index + self.batch_size]
 
-                y_pred = self.forward(torch.FloatTensor(np.array(batch_X)))
-                y_true = torch.LongTensor(np.array(batch_y))
+                y_pred = self.forward(batch_X)
+                y_true = batch_y
 
                 if self.loss_function == nn.CrossEntropyLoss:
                     train_loss = loss_function(y_pred, y_true)
@@ -158,7 +165,7 @@ class Method_CNN(method, nn.Module):
                 optimizer.step()
                 epoch_loss += train_loss.item()
                 with torch.no_grad():
-                    self.metrics_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
+                    self.metrics_evaluator.data = {'true_y': y_true.cpu(), 'pred_y': y_pred.max(1)[1].cpu()}
                     curr_accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
                     epoch_acc += curr_accuracy
                     epoch_precision += precision
@@ -182,8 +189,8 @@ class Method_CNN(method, nn.Module):
             # Record test file accuracy
             if test_data:
                 with torch.no_grad():
-                    test_data_y_pred = self.forward(torch.FloatTensor(np.array(test_data['X'])))
-                    test_data_y_true = torch.LongTensor(np.array(test_data['y']))
+                    test_data_y_pred = self.forward(test_data['X']).cpu()
+                    test_data_y_true = test_data['y'].cpu()
                     self.metrics_evaluator.data = {'true_y': test_data_y_true, 'pred_y': test_data_y_pred.max(1)[1]}
                     accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
                     self.test_data_accuracies.append(accuracy)
@@ -278,7 +285,7 @@ class Method_CNN(method, nn.Module):
         plt.show()
 
     def plot_first_conv_kernels(self, fold_count):
-        kernels = self.first_conv.weight.data.detach().clone()
+        kernels = self.first_conv.weight.data.detach().clone().cpu()
         kernels = kernels - kernels.min()
         kernels = kernels / kernels.max()
         filter_img = torchvision.utils.make_grid(kernels, nrow=10).permute(1, 2, 0).numpy()
@@ -287,8 +294,8 @@ class Method_CNN(method, nn.Module):
 
     @torch.no_grad()
     def test(self, X, y):
-        y_pred = self.forward(torch.FloatTensor(np.array(X)))
-        y_true = torch.LongTensor(np.array(y))
+        y_pred = self.forward(X).cpu()
+        y_true = y.cpu()
         self.metrics_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
         accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
         return y_pred, accuracy, precision, recall, f1
