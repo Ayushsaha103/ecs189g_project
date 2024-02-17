@@ -1,5 +1,5 @@
 from code.stage_3_code.Dataset_Loader import Dataset_Loader
-from code.stage_3_code.Method_CNN_ORL import Method_CNN
+from code.stage_3_code.Method_CNN_ORL import Method_CNN_ORL
 from code.stage_3_code.Result_Saver import Result_Saver
 from code.stage_3_code.Setting_KFold_CV import Setting_KFold_CV
 from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
@@ -33,6 +33,7 @@ configurations = {
 input_shape = 3
 output_shape = 40
 output_layer_input_channels = 1440
+max_epoch=50
 #
 
 
@@ -56,9 +57,9 @@ for config in config_permutations:
 
     result_obj.result_destination_file_name = 'MLP_prediction_result'
 
-    method_obj = Method_CNN('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
+    method_obj = Method_CNN_ORL('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
                             config['hidden_units'], output_shape, config['lr'], config['batch_size'],
-                            config['loss_function'], config['optimizer'], output_layer_input_channels=output_layer_input_channels)
+                            config['loss_function'], config['optimizer'], output_layer_input_channels=output_layer_input_channels, max_epoch=max_epoch)
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra

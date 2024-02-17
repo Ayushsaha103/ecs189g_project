@@ -76,18 +76,7 @@ class Method_CNN(method, nn.Module):
             nn.MaxPool2d(kernel_size=2,
                          stride=2)
         )
-        # self.conv_block_3 = nn.Sequential(
-        #     nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-        #     nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=2,
-            #              stride=2)
-        # )
+
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=output_layer_input_channels,
@@ -146,6 +135,9 @@ class Method_CNN(method, nn.Module):
         for epoch in range(self.max_epoch):
             epoch_loss = 0
             epoch_acc = 0
+            epoch_precision = 0
+            epoch_recall = 0
+            epoch_f1 = 0
             num_batches = np.ceil(X.shape[0] / self.batch_size)
 
             for batch_index in range(0, X.shape[0], self.batch_size):
@@ -169,16 +161,23 @@ class Method_CNN(method, nn.Module):
                     self.metrics_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
                     curr_accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
                     epoch_acc += curr_accuracy
-                    self.train_precisions.append(precision)
-                    self.train_recalls.append(recall)
-                    self.train_f1s.append(f1)
+                    epoch_precision += precision
+                    epoch_recall += recall
+                    epoch_f1 += f1
+
 
             epoch_loss /= num_batches
             epoch_acc /= num_batches
+            epoch_precision /= num_batches
+            epoch_recall /= num_batches
+            epoch_f1 /= num_batches
 
             # Record loss for curr epoch/iteration
             self.train_losses.append(epoch_loss)
             self.train_accuracies.append(epoch_acc)
+            self.train_precisions.append(epoch_precision)
+            self.train_recalls.append(epoch_recall)
+            self.train_f1s.append(epoch_f1)
 
             # Record test file accuracy
             if test_data:

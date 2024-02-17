@@ -1,5 +1,5 @@
 from code.stage_3_code.Dataset_Loader import Dataset_Loader
-from code.stage_3_code.Method_CNN import Method_CNN
+from code.stage_3_code.Method_CNN_CIFAR10 import Method_CNN_CIFAR10
 from code.stage_3_code.Result_Saver import Result_Saver
 from code.stage_3_code.Setting_KFold_CV import Setting_KFold_CV
 from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
@@ -26,13 +26,16 @@ configurations = {
     'optimizer': [
         torch.optim.Adam
     ],
-    "hidden_units": [64],
+    "first_conv_hidden_units": [32],
+    "second_conv_hidden_units": [64],
+    "third_conv_hidden_units": [128],
 }
 
 # params
 input_shape = 3
 output_shape = 10
-output_layer_input_channels = 256
+output_layer_input_channels = 2048
+max_epochs=50
 
 #
 
@@ -57,9 +60,9 @@ for config in config_permutations:
 
     result_obj.result_destination_file_name = 'MLP_prediction_result'
 
-    method_obj = Method_CNN('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
-                            config['hidden_units'], output_shape, config['lr'], config['batch_size'],
-                            config['loss_function'], config['optimizer'], max_epoch=50, output_layer_input_channels=output_layer_input_channels)
+    method_obj = Method_CNN_CIFAR10('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
+                            config['first_conv_hidden_units'], config['second_conv_hidden_units'] , config['third_conv_hidden_units'], output_shape, config['lr'], config['batch_size'],
+                            config['loss_function'], config['optimizer'], max_epoch=max_epochs, output_layer_input_channels=output_layer_input_channels)
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra
