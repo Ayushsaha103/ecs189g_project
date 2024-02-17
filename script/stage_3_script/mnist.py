@@ -1,5 +1,5 @@
 from code.stage_3_code.Dataset_Loader import Dataset_Loader
-from code.stage_3_code.Method_CNN import Method_CNN
+from code.stage_3_code.Method_CNN_MNIST import Method_CNN
 from code.stage_3_code.Result_Saver import Result_Saver
 from code.stage_3_code.Setting_KFold_CV import Setting_KFold_CV
 from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
@@ -32,7 +32,7 @@ configurations = {
 # params
 input_shape = 1
 output_shape = 10
-output_layer_input_channels = 5
+output_layer_input_channels = 500
 
 #
 
@@ -59,7 +59,7 @@ for config in config_permutations:
 
     method_obj = Method_CNN('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
                             config['hidden_units'], output_shape, config['lr'], config['batch_size'],
-                            config['loss_function'], config['optimizer'], max_epoch=10, output_layer_input_channels=output_layer_input_channels)
+                            config['loss_function'], config['optimizer'], max_epoch=50, output_layer_input_channels=output_layer_input_channels)
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra

@@ -54,7 +54,7 @@ class Method_CNN(method, nn.Module):
                                     out_channels=hidden_units,
                                     kernel_size=3,
                                     stride=2,
-                                    padding=1)
+                                    padding=2)
 
         self.conv_block_1 = nn.Sequential(
             self.first_conv,
@@ -63,31 +63,20 @@ class Method_CNN(method, nn.Module):
                       out_channels=hidden_units,
                       kernel_size=3,
                       stride=2,
-                      padding=1),
+                      padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2,
                          stride=2)
         )
         self.conv_block_2 = nn.Sequential(
-            nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=1),
+            nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
             nn.ReLU(),
-            nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=1),
+            nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2,
                          stride=2)
         )
-        # self.conv_block_3 = nn.Sequential(
-        #     nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-        #     nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=2,
-            #              stride=2)
-        # )
+
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=output_layer_input_channels,

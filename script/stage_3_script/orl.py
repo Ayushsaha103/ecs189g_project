@@ -1,5 +1,5 @@
 from code.stage_3_code.Dataset_Loader import Dataset_Loader
-from code.stage_3_code.Method_CNN import Method_CNN
+from code.stage_3_code.Method_CNN_ORL import Method_CNN
 from code.stage_3_code.Result_Saver import Result_Saver
 from code.stage_3_code.Setting_KFold_CV import Setting_KFold_CV
 from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
@@ -21,7 +21,7 @@ torch.manual_seed(2)
 
 configurations = {
     'lr': [1e-3],
-    'batch_size': [32],
+    'batch_size': [16],
     'loss_function': [nn.CrossEntropyLoss],
     'optimizer': [
         torch.optim.Adam
@@ -32,7 +32,7 @@ configurations = {
 # params
 input_shape = 3
 output_shape = 40
-output_layer_input_channels = 7480
+output_layer_input_channels = 1440
 #
 
 

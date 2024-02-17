@@ -52,8 +52,8 @@ class Method_CNN(method, nn.Module):
         # first conv is seperate so we can visualize the kernels later
         self.first_conv = nn.Conv2d(in_channels=input_shape,
                                     out_channels=hidden_units,
-                                    kernel_size=3,
-                                    stride=2,
+                                    kernel_size=5,
+                                    stride=1,
                                     padding=1)
 
         self.conv_block_1 = nn.Sequential(
@@ -61,33 +61,18 @@ class Method_CNN(method, nn.Module):
             nn.ReLU(),
             nn.Conv2d(in_channels=hidden_units,
                       out_channels=hidden_units,
-                      kernel_size=3,
-                      stride=2,
+                      kernel_size=5,
+                      stride=1,
                       padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2,
-                         stride=2)
-        )
-        self.conv_block_2 = nn.Sequential(
-            nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=1),
+            nn.Conv2d(hidden_units, hidden_units, kernel_size=5, padding=1),
             nn.ReLU(),
-            nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=1),
+            nn.Conv2d(hidden_units, hidden_units, kernel_size=5, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2,
                          stride=2)
         )
-        # self.conv_block_3 = nn.Sequential(
-        #     nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-        #     nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.Conv2d(hidden_units, hidden_units, kernel_size=3, padding=2),
-            # nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=2,
-            #              stride=2)
-        # )
+
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=output_layer_input_channels,
@@ -115,9 +100,9 @@ class Method_CNN(method, nn.Module):
 
     def forward(self, x):
         c1 = self.conv_block_1(x)
-        c2 = self.conv_block_2(c1)
+        # c2 = self.conv_block_2(c1)
         # c3 = self.conv_block_3(c2)
-        y_pred = self.classifier(c2)
+        y_pred = self.classifier(c1)
         return y_pred
 
     def train(self, X, y, test_data: None):

@@ -21,18 +21,18 @@ torch.manual_seed(2)
 
 configurations = {
     'lr': [1e-3],
-    'batch_size': [64],
+    'batch_size': [32],
     'loss_function': [nn.CrossEntropyLoss],
     'optimizer': [
         torch.optim.Adam
     ],
-    "hidden_units": [10],
+    "hidden_units": [64],
 }
 
 # params
 input_shape = 3
 output_shape = 10
-output_layer_input_channels = 40
+output_layer_input_channels = 256
 
 #
 
@@ -59,7 +59,7 @@ for config in config_permutations:
 
     method_obj = Method_CNN('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
                             config['hidden_units'], output_shape, config['lr'], config['batch_size'],
-                            config['loss_function'], config['optimizer'], max_epoch=1, output_layer_input_channels=output_layer_input_channels)
+                            config['loss_function'], config['optimizer'], max_epoch=50, output_layer_input_channels=output_layer_input_channels)
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra
