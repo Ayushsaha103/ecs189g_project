@@ -26,13 +26,13 @@ configurations = {
     'optimizer': [
         torch.optim.Adam
     ],
-    "hidden_units": [10],
+    "hidden_units": [20],
 }
 
 # params
 input_shape = 3
 output_shape = 40
-output_layer_input_channels = 720
+output_layer_input_channels = 1440
 max_epoch=50
 #
 

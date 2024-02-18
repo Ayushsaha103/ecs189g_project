@@ -8,6 +8,7 @@ import torch
 from torch import nn
 import itertools
 import os
+from torchsummary import summary
 
 #################################################################################################################
 
@@ -63,6 +64,8 @@ for config in config_permutations:
     method_obj = Method_CNN_CIFAR10('CNN', '', result_obj.result_destination_folder_path, input_shape,
                             config['first_conv_hidden_units'], config['second_conv_hidden_units'] , config['third_conv_hidden_units'], output_shape, config['lr'], config['batch_size'],
                             config['loss_function'], config['optimizer'], max_epoch=max_epochs, output_layer_input_channels=output_layer_input_channels)
+
+    # summary(method_obj.cuda(), (3, 32, 32))
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra

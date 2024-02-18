@@ -41,7 +41,6 @@ class Method_CNN_ORL(Method_CNN, method, nn.Module):
         Method_CNN.__init__(self, mName, mDescription, save_dir, input_shape, hidden_units, output_shape, learning_rate,
                             batch_size, loss_function, optimizer, max_epoch, output_layer_input_channels)
 
-        # first conv is seperate so we can visualize the kernels later
         self.first_conv = nn.Conv2d(in_channels=input_shape,
                                     out_channels=hidden_units,
                                     kernel_size=3,
