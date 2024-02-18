@@ -1,37 +1,44 @@
-
-
-from code.stage_2_code.Dataset_Loader import Dataset_Loader
-from code.stage_2_code.Method_MLP import Method_MLP
+from code.stage_3_code.Dataset_Loader import Dataset_Loader
+from code.stage_3_code.Method_CNN_CIFAR10 import Method_CNN_CIFAR10
 from code.stage_3_code.Result_Saver import Result_Saver
 from code.stage_3_code.Setting_KFold_CV import Setting_KFold_CV
-from code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
+from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
 import numpy as np
 import torch
 from torch import nn
 import itertools
 import os
-
+from torchsummary import summary
 
 #################################################################################################################
-#
 
-# ---- Multi-Layer Perceptron script ----
 # ---- parameter section -------------------------------
 np.random.seed(2)
 torch.manual_seed(2)
 # ------------------------------------------------------
 
 
-#----model configs---
+# ----model configs---
 
 configurations = {
-    'lr': [1e-4],
-    'batch_size': [1024],
+    'lr': [1e-3],
+    'batch_size': [256],
     'loss_function': [nn.CrossEntropyLoss],
     'optimizer': [
         torch.optim.Adam
-    ]
+    ],
+    "first_conv_hidden_units": [430],
+    "second_conv_hidden_units": [360],
+    "third_conv_hidden_units": [360],
 }
+
+# params
+input_shape = 3
+output_shape = 10
+output_layer_input_channels = 1440
+max_epochs = 50
+
+#
 
 
 keys, values = zip(*configurations.items())
@@ -42,25 +49,29 @@ for config in config_permutations:
     print('Config: ', config)
 
     # ---- objection initialization setction ---------------
-    data_obj = Dataset_Loader('train', '')
-    data_obj.dataset_source_folder_path = '../../data/stage_2_data/'
-    data_obj.dataset_source_file_name = 'train.csv'
+    data_obj = Dataset_Loader('cifar10_data', '')
+    data_obj.dataset_source_folder_path = '../../data/stage_3_data/'
+    data_obj.dataset_source_file_name = 'CIFAR'
 
     result_obj = Result_Saver('saver', '')
-    result_obj.result_destination_folder_path = os.path.join('../../result/stage_2_result/final-model', f'lr-{config["lr"]}/', f'batch-{config["batch_size"]}', f'loss_function-{config["loss_function"]}', f'optimizer-{config["optimizer"]}/')
+    result_obj.result_destination_folder_path = os.path.join('../../result/stage_3_result/cifar-10-model')
 
     if not os.path.exists(result_obj.result_destination_folder_path):
         os.makedirs(result_obj.result_destination_folder_path)
 
-    result_obj.result_destination_file_name = 'MLP_prediction_result'
+    result_obj.result_destination_file_name = 'CNN_prediction_result'
 
-    method_obj = Method_MLP('multi-layer perceptron', '', result_obj.result_destination_folder_path, config['lr'], config['batch_size'], config['loss_function'], config['optimizer'])
+    method_obj = Method_CNN_CIFAR10('CNN', '', result_obj.result_destination_folder_path, input_shape,
+                            config['first_conv_hidden_units'], config['second_conv_hidden_units'] , config['third_conv_hidden_units'], output_shape, config['lr'], config['batch_size'],
+                            config['loss_function'], config['optimizer'], max_epoch=max_epochs, output_layer_input_channels=output_layer_input_channels)
+
+    # summary(method_obj.cuda(), (3, 32, 32))
 
     setting_obj = Setting_KFold_CV('k fold cross validation', '')
     # setting_obj = Setting_Tra
     # in_Test_Split('train test split', '')
 
-    evaluate_obj = Evaluate_Accuracy('accuracy', '')
+    evaluate_obj = Evaluate_Metrics('metrics', '')
     # ------------------------------------------------------
 
     # ---- running section ---------------------------------
@@ -69,11 +80,6 @@ for config in config_permutations:
     setting_obj.print_setup_summary()
     mean_score, std_score = setting_obj.load_run_save_evaluate()
     print('************ Overall Performance ************')
-#   print('MLP Accuracy: ' + str(mean_score) + ' +/- ' + str(std_score))
-    print('MLP Accuracy: {:.2f}% +/- {:.2f}%.'.format(mean_score * 100, std_score * 100))
+    print('CNN Accuracy: {:.2f}% +/- {:.2f}%.'.format(mean_score * 100, std_score * 100))
     print('************ Finish ************')
     # ------------------------------------------------------
-
-
-
-
