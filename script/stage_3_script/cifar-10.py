@@ -21,21 +21,21 @@ torch.manual_seed(2)
 
 configurations = {
     'lr': [1e-3],
-    'batch_size': [32],
+    'batch_size': [256],
     'loss_function': [nn.CrossEntropyLoss],
     'optimizer': [
         torch.optim.Adam
     ],
-    "first_conv_hidden_units": [32],
-    "second_conv_hidden_units": [64],
-    "third_conv_hidden_units": [128],
+    "first_conv_hidden_units": [430],
+    "second_conv_hidden_units": [360],
+    "third_conv_hidden_units": [360],
 }
 
 # params
 input_shape = 3
 output_shape = 10
-output_layer_input_channels = 2048
-max_epochs=50
+output_layer_input_channels = 1440
+max_epochs = 50
 
 #
 
@@ -58,9 +58,9 @@ for config in config_permutations:
     if not os.path.exists(result_obj.result_destination_folder_path):
         os.makedirs(result_obj.result_destination_folder_path)
 
-    result_obj.result_destination_file_name = 'MLP_prediction_result'
+    result_obj.result_destination_file_name = 'CNN_prediction_result'
 
-    method_obj = Method_CNN_CIFAR10('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
+    method_obj = Method_CNN_CIFAR10('CNN', '', result_obj.result_destination_folder_path, input_shape,
                             config['first_conv_hidden_units'], config['second_conv_hidden_units'] , config['third_conv_hidden_units'], output_shape, config['lr'], config['batch_size'],
                             config['loss_function'], config['optimizer'], max_epoch=max_epochs, output_layer_input_channels=output_layer_input_channels)
 

@@ -151,8 +151,8 @@ class Method_CNN(method, nn.Module):
                 batch_X = X[batch_index:batch_index + self.batch_size]
                 batch_y = y[batch_index:batch_index + self.batch_size]
 
-                y_pred = self.forward(batch_X)
-                y_true = batch_y
+                y_pred = self.forward(torch.tensor(batch_X, dtype=torch.float).to(self.device))
+                y_true = torch.tensor(batch_y, dtype=torch.long).to(self.device)
 
                 if self.loss_function == nn.CrossEntropyLoss:
                     train_loss = loss_function(y_pred, y_true)
@@ -254,21 +254,21 @@ class Method_CNN(method, nn.Module):
         plt.legend()
 
         plt.subplot(3, 3, 7)
-        plt.plot(self.train_precisions, label="Test File Precision", color='purple')
+        plt.plot(self.test_data_precisions, label="Test File Precision", color='purple')
         plt.title('Test File Precision over time')
         plt.xlabel('Epoch')
         plt.ylabel('Precision')
         plt.legend()
 
         plt.subplot(3, 3, 8)
-        plt.plot(self.train_recalls, label="Test File Recall", color='orange')
+        plt.plot(self.test_data_recalls, label="Test File Recall", color='orange')
         plt.title('Test File Recall over time')
         plt.xlabel('Epoch')
         plt.ylabel('Recall')
         plt.legend()
 
         plt.subplot(3, 3, 9)
-        plt.plot(self.train_f1s, label="Test File F1 Score", color='pink')
+        plt.plot(self.test_data_f1s, label="Test File F1 Score", color='pink')
         plt.title('Test File F1 Score over time')
         plt.xlabel('Epoch')
         plt.ylabel('F1 Score')
@@ -300,8 +300,23 @@ class Method_CNN(method, nn.Module):
         accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
         return y_pred, accuracy, precision, recall, f1
 
+    def reset(self):
+        @torch.no_grad()
+        def weight_reset(m: nn.Module):
+            # - check if the current module has reset_parameters & if it's callabed called it on m
+            reset_parameters = getattr(m, "reset_parameters", None)
+            if callable(reset_parameters):
+                m.reset_parameters()
+
+        self.apply(fn=weight_reset)
+        self.train_accuracies = []
+        self.train_losses = []
+
+
     def run(self, fold_count: int):
         print('method running...')
+
+        self.reset()
 
         print('--start training...')
         self.train(self.data['train']['X'], self.data['train']['y'], self.data['test_data'])
@@ -309,7 +324,7 @@ class Method_CNN(method, nn.Module):
         self.save_and_show_graph(fold_count)
         print('--start testing...')
         # pred_y = self.test(self.data['test']['X'])
-        pred_y, accuracy, precision, recall, f1 = self.test(self.data['test']['X'], self.data['test']['y'])
+        pred_y, accuracy, precision, recall, f1 = self.test(self.data['test_data']['X'], self.data['test_data']['y'])
 
         self.plot_first_conv_kernels(fold_count)
 

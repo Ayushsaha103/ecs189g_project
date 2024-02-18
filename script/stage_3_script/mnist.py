@@ -55,9 +55,9 @@ for config in config_permutations:
     if not os.path.exists(result_obj.result_destination_folder_path):
         os.makedirs(result_obj.result_destination_folder_path)
 
-    result_obj.result_destination_file_name = 'MLP_prediction_result'
+    result_obj.result_destination_file_name = 'CNN_prediction_result'
 
-    method_obj = Method_CNN_MNIST('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
+    method_obj = Method_CNN_MNIST('CNN', '', result_obj.result_destination_folder_path, input_shape,
                             config['hidden_units'], output_shape, config['lr'], config['batch_size'],
                             config['loss_function'], config['optimizer'], max_epoch=max_epoch, output_layer_input_channels=output_layer_input_channels)
 

@@ -30,44 +30,49 @@ class Method_CNN_CIFAR10(Method_CNN, method, nn.Module):
         # first conv is seperate so we can visualize the kernels later
         self.first_conv = nn.Conv2d(in_channels=input_shape,
                                     out_channels=first_conv_hidden_units,
-                                    kernel_size=3,
+                                    kernel_size=5,
                                     stride=2,
                                     padding=2)
 
         self.conv_block_1 = nn.Sequential(
             self.first_conv,
             nn.ReLU(),
-            nn.Conv2d(in_channels=first_conv_hidden_units,
-                      out_channels=first_conv_hidden_units,
-                      kernel_size=3,
-                      stride=2,
-                      padding=2),
+            nn.Conv2d(first_conv_hidden_units, first_conv_hidden_units, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2,
-                         stride=2)
+                         stride=2),
+            nn.Dropout2d(p=0.4),
+            nn.BatchNorm2d(first_conv_hidden_units),
         )
         self.conv_block_2 = nn.Sequential(
-            nn.Conv2d(first_conv_hidden_units, second_conv_hidden_units, kernel_size=3, padding=2),
+            nn.Conv2d(first_conv_hidden_units, second_conv_hidden_units, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(second_conv_hidden_units, second_conv_hidden_units, kernel_size=3, padding=2),
+            nn.Dropout2d(0.4),
+            nn.Conv2d(second_conv_hidden_units, second_conv_hidden_units, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2,
-                         stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout2d(p=0.4),
+            nn.BatchNorm2d(second_conv_hidden_units),
         )
 
         self.conv_block_3 = nn.Sequential(
-            nn.Conv2d(second_conv_hidden_units, third_conv_hidden_units, kernel_size=3, padding=2),
+            nn.Conv2d(second_conv_hidden_units, third_conv_hidden_units, kernel_size=2, padding=0),
             nn.ReLU(),
-            nn.Conv2d(third_conv_hidden_units, third_conv_hidden_units, kernel_size=3, padding=2),
+            nn.Dropout2d(p=0.4),
+            nn.Conv2d(third_conv_hidden_units, third_conv_hidden_units, kernel_size=2, padding=0),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2,
-                         stride=2)
+            nn.Dropout2d(p=0.4),
+            nn.BatchNorm2d(third_conv_hidden_units),
         )
+
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(in_features=output_layer_input_channels,
-                      out_features=output_shape)
+            nn.Linear(in_features=output_layer_input_channels, out_features=64),
+            nn.Dropout(p=0.3),
+            nn.Linear(in_features=64,
+                      out_features=output_shape),
+            nn.Softplus(),
         )
 
     def forward(self, x):

@@ -50,6 +50,8 @@ class Setting_KFold_CV(setting):
                                 'test_data': {'X': X_test_data, 'y': Y_test_data}}
 
             for k, v in self.method.data.items():
+                if k == 'train':
+                    continue
                 for vk, d in v.items():
                     nd = torch.from_numpy(d)
                     if vk == 'X':

@@ -26,13 +26,13 @@ configurations = {
     'optimizer': [
         torch.optim.Adam
     ],
-    "hidden_units": [20],
+    "hidden_units": [10],
 }
 
 # params
 input_shape = 3
 output_shape = 40
-output_layer_input_channels = 1440
+output_layer_input_channels = 720
 max_epoch=50
 #
 
@@ -55,9 +55,9 @@ for config in config_permutations:
     if not os.path.exists(result_obj.result_destination_folder_path):
         os.makedirs(result_obj.result_destination_folder_path)
 
-    result_obj.result_destination_file_name = 'MLP_prediction_result'
+    result_obj.result_destination_file_name = 'CNN_prediction_result'
 
-    method_obj = Method_CNN_ORL('multi-layer perceptron', '', result_obj.result_destination_folder_path, input_shape,
+    method_obj = Method_CNN_ORL('CNN', '', result_obj.result_destination_folder_path, input_shape,
                             config['hidden_units'], output_shape, config['lr'], config['batch_size'],
                             config['loss_function'], config['optimizer'], output_layer_input_channels=output_layer_input_channels, max_epoch=max_epoch)
 
