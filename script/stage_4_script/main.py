@@ -1,3 +1,13 @@
+# readme:
+# this project does text classification. it iteratively stores segments of the entire data into a local dataframe 'df', then saves 'df' to a local file
+# It trains by loading df back again into a torch tabular dataset, and training on what was loaded.
+
+# current accuracy is ~53%
+
+
+
+
+
 import torch
 import torch.nn.functional as F
 import torchtext
@@ -62,6 +72,13 @@ negd = '../../data/stage_4_data/text_classification/train/neg/'     # negative f
 posfs = os.listdir(posd)        # list of pos filenames
 negfs = os.listdir(negd)        # list of neg filenames
 
+# func. that creates folder for the modified dataset segments to be stored
+def create_modified_dataset_format_folder():
+    if not os.path.exists('../../data/stage_4_data/text_classification/modified_format/'):
+        directory = "modified_format"
+        parent_dir = "../../data/stage_4_data/text_classification/"
+        path = os.path.join(parent_dir, directory)
+        os.mkdir(path)
 
 # func. to read some positive files into file_contents
 def read_pos_files(pos_cnter, file_contents, file_labels):
@@ -104,6 +121,7 @@ def reformat_and_save_dataset(updated_datasegfile, pos_cnter, neg_cnter):
 
 
 pos_cnter = 0; neg_cnter = 0
+create_modified_dataset_format_folder()
 for i in range(5):
 
     ### reformat and save dataset
@@ -235,6 +253,7 @@ for i in range(5):
             if 1 == 1:      # not batch_idx % 50:
                 print(f'Epoch: {epoch + 1:03d}/{NUM_EPOCHS:03d} | '
                       f'Batch {batch_idx:03d}/{len(train_loader):03d} | '
+                      f'{compute_accuracy(model, train_loader, DEVICE):.2f}% | '
                       f'Loss: {loss:.4f}')
 
         with torch.set_grad_enabled(False):
