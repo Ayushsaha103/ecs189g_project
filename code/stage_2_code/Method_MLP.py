@@ -8,6 +8,7 @@ Concrete MethodModule class for a specific learning MethodModule
 from code.base_class.method import method
 from code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
 from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.utils import shuffle
 import torch
 from torch import nn
 import numpy as np
@@ -75,7 +76,7 @@ class Method_MLP(method, nn.Module):
         # outout layer result
         # self.fc_layer_2(h) will be a nx2 tensor
         # n (denotes the input instance number): 0th dimension; 2 (denotes the class number): 1st dimension
-        # we do softmax along dim=1 to get the normalized classification probability distributions for each instance
+        # we do softmax along dim=1 to get the normalized classification.py probability distributions for each instance
         y_pred = self.activation_func_2(self.fc_layer_2(h))
         return y_pred
 
@@ -120,6 +121,8 @@ class Method_MLP(method, nn.Module):
             epoch_loss = 0
             epoch_acc = 0
             num_batches = np.ceil(X.shape[0] / self.batch_size)
+
+            X, y = shuffle(X, y, random_state=0)
 
             for batch_index in range(0, X.shape[0], self.batch_size):
                 batch_X = X[batch_index:batch_index + self.batch_size]
@@ -266,7 +269,7 @@ class Method_MLP(method, nn.Module):
        # return y_pred.max(1)[1]
 
         # y_true = torch.FloatTensor(np.array(y))
-        y_true = torch.LongTensor(np.array(y))  # This should be LongTensor for classification targets
+        y_true = torch.LongTensor(np.array(y))  # This should be LongTensor for classification.py targets
 
         # Get numpy arrays from tensors for evaluation
         y_true_np = y_true.numpy()

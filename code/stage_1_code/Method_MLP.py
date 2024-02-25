@@ -46,7 +46,7 @@ class Method_MLP(method, nn.Module):
         # outout layer result
         # self.fc_layer_2(h) will be a nx2 tensor
         # n (denotes the input instance number): 0th dimension; 2 (denotes the class number): 1st dimension
-        # we do softmax along dim=1 to get the normalized classification probability distributions for each instance
+        # we do softmax along dim=1 to get the normalized classification.py probability distributions for each instance
         y_pred = self.activation_func_2(self.fc_layer_2(h))
         return y_pred
 
