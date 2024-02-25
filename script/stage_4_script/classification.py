@@ -56,7 +56,7 @@ result_obj.result_destination_folder_path = os.path.join('../../result/stage_4_r
 if not os.path.exists(result_obj.result_destination_folder_path):
     os.makedirs(result_obj.result_destination_folder_path)
 
-result_obj.result_destination_file_name = 'CNN_prediction_result'
+result_obj.result_destination_file_name = 'RNN_classification_result'
 
 method_obj = Method_Classification_RNN("Classification RNN", '', result_obj.result_destination_folder_path, vocab_size, embedding_size, hidden_size, num_rnn_layers, output_size, learning_rate, batch_size, loss_function, optimizer, max_epochs, text_length=text_length)
 

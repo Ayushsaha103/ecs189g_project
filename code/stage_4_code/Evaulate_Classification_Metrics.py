@@ -23,8 +23,3 @@ class Evaluate_Classification_Metrics(evaluate):
         f1 = f1_score(true_labels, predicted_labels, average=average, zero_division=0)
         return accuracy, precision, recall, f1
 
-    def generate_confusion_matrix(self):
-        true_labels = self.data['true_y']
-        predicted_labels = self.data['pred_y']
-        cm = confusion_matrix(true_labels, predicted_labels)
-        return ConfusionMatrixDisplay(cm)
