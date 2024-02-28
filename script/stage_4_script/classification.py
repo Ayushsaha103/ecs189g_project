@@ -2,6 +2,7 @@
 from code.stage_4_code.Classification_Dataset_Loader import Classification_Dataset_Loader
 from code.stage_4_code.Result_Saver import Result_Saver
 from code.stage_4_code.Method_Classification_Rnn import Method_Classification_RNN
+from code.stage_4_code.Method_Classification_LSTM import Method_Classification_LSTM
 from code.stage_4_code.Setting_Movie_Classification import Setting_Movie_Classification
 from code.stage_4_code.Evaulate_Classification_Metrics import Evaluate_Classification_Metrics
 import os
@@ -15,9 +16,14 @@ hidden_size=64
 output_size = 1
 learning_rate = 0.001
 batch_size = 4096
-num_rnn_layers = 7
-loss_function = torch.nn.BCELoss
-optimizer = torch.optim.Adam
+
+#num_rnn_layers = 7
+num_lstm_layers = 2
+
+#loss_function = torch.nn.BCELoss
+loss_function = torch.nn.BCEWithLogitsLoss  # LSTM
+
+optimizer = torch.optim.SGD
 max_epochs = 100
 
 ###
@@ -56,9 +62,12 @@ result_obj.result_destination_folder_path = os.path.join('../../result/stage_4_r
 if not os.path.exists(result_obj.result_destination_folder_path):
     os.makedirs(result_obj.result_destination_folder_path)
 
-result_obj.result_destination_file_name = 'RNN_classification_result'
+#result_obj.result_destination_file_name = 'RNN_classification_result'
+result_obj.result_destination_file_name = 'LSTM_classification_result'
 
-method_obj = Method_Classification_RNN("Classification RNN", '', result_obj.result_destination_folder_path, vocab_size, embedding_size, hidden_size, num_rnn_layers, output_size, learning_rate, batch_size, loss_function, optimizer, max_epochs, text_length=text_length)
+#method_obj = Method_Classification_RNN("Classification RNN", '', result_obj.result_destination_folder_path, vocab_size, embedding_size, hidden_size, num_rnn_layers, output_size, learning_rate, batch_size, loss_function, optimizer, max_epochs, text_length=text_length)
+method_obj = Method_Classification_LSTM("Classification LSTM", '', result_obj.result_destination_folder_path, vocab_size, embedding_size, hidden_size, num_lstm_layers, output_size, learning_rate, batch_size, loss_function, optimizer, max_epochs, text_length=text_length)
+
 
 setting_obj = Setting_Movie_Classification('classification', '')
 
