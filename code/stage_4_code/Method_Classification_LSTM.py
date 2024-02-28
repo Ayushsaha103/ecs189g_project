@@ -106,8 +106,6 @@ class Method_Classification_LSTM(method, nn.Module):
         x = self.relu(x)  # Non-linear activation
         x = self.fc2(x)
 
-        # Final sigmoid activation
-        x = self.sigmoid(x)
         return x
 
     def train(self, X, y, test_data: None):
