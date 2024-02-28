@@ -23,7 +23,7 @@ num_lstm_layers = 2
 #loss_function = torch.nn.BCELoss
 loss_function = torch.nn.BCEWithLogitsLoss  # LSTM
 
-optimizer = torch.optim.SGD
+optimizer = torch.optim.Adam
 max_epochs = 100
 
 ###
