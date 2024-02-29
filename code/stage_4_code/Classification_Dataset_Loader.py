@@ -57,10 +57,12 @@ class Classification_Dataset_Loader(dataset):
                 punctuation_removed_text += c
         sentence_words = punctuation_removed_text.split(' ')
         cleaned_words = [porter.stem(word) for word in sentence_words if word.isalpha() and (word not in stop_words)]
-        trunced_sentence = cleaned_words[:55]
+        half = len(cleaned_words)//2
+        trunced_sentence = cleaned_words[:30] + cleaned_words[half-15:half+15] + cleaned_words[-30:]
         return trunced_sentence
 
     def sentence_to_word_dic_encoded(self, sentence):
+
         result_sentence = []
         for word in sentence:
             if word not in self.data['word_dic']:

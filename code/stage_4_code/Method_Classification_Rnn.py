@@ -52,12 +52,14 @@ class Method_Classification_RNN(method, nn.Module):
         self.embedding = torch.nn.Embedding(vocab_size, embedding_size, padding_idx=0)
 
         #rnn
-        self.rnn = nn.RNN(embedding_size, hidden_size, num_layers=num_rnn_layers, dropout=0.35, batch_first=True, bidirectional=True)
+        self.rnn = nn.RNN(embedding_size, hidden_size, num_layers=num_rnn_layers, dropout=0.2, batch_first=True)
 
 
 
 
-        self.linear = nn.Linear(hidden_size*2, hidden_size)
+        self.linear = nn.Linear(hidden_size, hidden_size)
+        self.dropout1 = nn.Dropout(p=0.2)
+        self.relu1 = nn.ReLU()
         self.linear2 = nn.Linear(hidden_size, output_size)
         self.sigmoid = nn.Sigmoid()
 
@@ -88,6 +90,8 @@ class Method_Classification_RNN(method, nn.Module):
         x = self.embedding(x)
         x, hidden = self.rnn(x)
         x = self.linear(x[:, -1])
+        x = self.dropout1(x)
+        x = self.relu1(x)
         x = self.linear2(x)
         x = torch.squeeze(x)
         x = self.sigmoid(x)
@@ -98,7 +102,7 @@ class Method_Classification_RNN(method, nn.Module):
 
     def train(self, X, y, test_data: None):
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
-        optimizer = self.optimizer(self.parameters(), lr=self.learning_rate)
+        optimizer = self.optimizer(self.parameters(), lr=self.learning_rate, weight_decay=1e-4)
         # check here for the nn.CrossEntropyLoss doc: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
         loss_function = self.loss_function()
         # for training accuracy investigation purpose
@@ -169,13 +173,13 @@ class Method_Classification_RNN(method, nn.Module):
                     test_batch_precision = 0
                     test_batch_recall = 0
                     test_batch_f1 = 0
-                    num_test_batches = X.shape[0] / self.batch_size + 1
+                    num_test_batches = np.ceil(test_data['X'].shape[0] / self.batch_size)
                     y_pred = []
-                    for batch_index in range(0, X.shape[0], self.batch_size):
+                    for batch_index in range(0, test_data['X'].shape[0], self.batch_size):
                         test_data_y_pred = self.forward(
-                            torch.tensor(X[batch_index:batch_index + self.batch_size], device=self.device)).cpu()
+                            torch.tensor(test_data['X'][batch_index:batch_index + self.batch_size], device=self.device)).cpu()
                         y_pred.extend(test_data_y_pred)
-                        test_data_y_true = y[batch_index:batch_index + self.batch_size]
+                        test_data_y_true = test_data['y'][batch_index:batch_index + self.batch_size]
                         self.metrics_evaluator.data = {'true_y': test_data_y_true,
                                                        'pred_y': test_data_y_pred.round().cpu()}
                         accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
@@ -287,14 +291,15 @@ class Method_Classification_RNN(method, nn.Module):
         test_batch_precision = 0
         test_batch_recall = 0
         test_batch_f1 = 0
-        num_test_batches = X.shape[0] / self.batch_size + 1
+        num_test_batches = np.ceil(X.shape[0] / self.batch_size)
         y_pred = []
         for batch_index in range(0, X.shape[0], self.batch_size):
             test_data_y_pred = self.forward(
                 torch.tensor(X[batch_index:batch_index + self.batch_size], device=self.device)).cpu()
             y_pred.extend(test_data_y_pred)
             test_data_y_true = y[batch_index:batch_index + self.batch_size]
-            self.metrics_evaluator.data = {'true_y': test_data_y_true, 'pred_y': test_data_y_pred.round().cpu()}
+            self.metrics_evaluator.data = {'true_y': test_data_y_true,
+                                           'pred_y': test_data_y_pred.round().cpu()}
             accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
             test_batch_acc += accuracy
             test_batch_precision += precision

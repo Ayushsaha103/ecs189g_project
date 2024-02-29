@@ -10,15 +10,15 @@ import torch
 
 ### Configs
 
-embedding_size = 7
-hidden_size=64
+embedding_size = 1000
+hidden_size=40
 output_size = 1
 learning_rate = 0.001
 batch_size = 4096
-num_rnn_layers = 7
+num_rnn_layers = 6
 loss_function = torch.nn.BCELoss
 optimizer = torch.optim.Adam
-max_epochs = 100
+max_epochs = 50
 
 ###
 
