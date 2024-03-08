@@ -67,13 +67,16 @@ class Dataset_Loader(dataset):
         # the following part, you can either put them into the setting class or you can leave them in the dataset loader
         # the following train, test, val index are just examples, sample the train, test according to project requirements
 
-        # todo: randomize the indexes
+        # generating lists of randomized indexes
         import random
-        idx_train, idx_val, idx_test = [], [], []
+        idx_train, idx_test = [], []
+        idx_val = []            # (unused)
+        
         labels_list = labels.tolist()
         uniq_labels_list = list(set(labels_list))
         train_cnt, test_cnt = -1, -1
 
+        # set the num. of train/test elems (per class), for each kind of dataset
         if self.dataset_name == 'cora':
             train_cnt = 20
             test_cnt = 150
@@ -83,24 +86,26 @@ class Dataset_Loader(dataset):
         elif self.dataset_name == 'pubmed':
             train_cnt = 20
             test_cnt = 200
-        #---- cora-small is a toy dataset I hand crafted for debugging purposes ---
-        elif self.dataset_name == 'cora-small':
-            idx_train = range(5)
-            idx_val = range(5, 10)
-            idx_test = range(5, 10)
+        # #---- cora-small is a toy dataset I hand crafted for debugging purposes ---
+        # elif self.dataset_name == 'cora-small':
+        #     idx_train = range(5)
+        #     idx_val = range(5, 10)
+        #     idx_test = range(5, 10)
+
+        # randomize idx_train, idx_test
         for uniq in uniq_labels_list:
             class_indices = [index for index, value in enumerate(labels_list) if value == uniq]
-
+            # add random indices to idx_train
             class_indices_sub = random.sample(class_indices, train_cnt)
             idx_train += class_indices_sub
-
+            # add random indices to idx_test
             remaining_class_indices = list(set(class_indices) - set(class_indices_sub))
             idx_test += random.sample(remaining_class_indices, test_cnt)
 
+        # convert idx_train, idx_test to torch.tensor's
         idx_train = torch.LongTensor(idx_train)
-        idx_val = torch.LongTensor(idx_val)
+        idx_val = torch.LongTensor(idx_val)        # (unused)
         idx_test = torch.LongTensor(idx_test)
-
 
         # get the training nodes/testing nodes
         # train_x = features[idx_train]
