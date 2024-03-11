@@ -53,11 +53,16 @@ def set_seed(seed_value):
 
 
 # Set the seed value
-set_seed(42)  # You can choose any number you prefer for the seed
+set_seed(42)
 
 # Set hyperparameters
-parser.set_defaults(lr=0.01)
-parser.set_defaults(dropout=0.5)
+parser.set_defaults(lr=0.005)  # Updated learning rate
+parser.set_defaults(weight_decay=1e-3)  # Added weight_decay default
+parser.set_defaults(hidden=16)  # Updated hidden units
+parser.set_defaults(dropout=0.7)  # Updated dropout rate
+parser.set_defaults(layers=2)  # Added number of layers argument
+parser.set_defaults(patience=15)  # Updated early stopping patience
+parser.set_defaults(batch_size=32)  # Added batch_size default
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -87,7 +92,8 @@ idx_test = D['train_test_val']['idx_test']
 model = GCN_cora(nfeat=features.shape[1],
                  nhid=args.hidden,
                  nclass=labels.max().item() + 1,
-                 dropout_rate=args.dropout)
+                 dropout_rate=args.dropout,
+                 layers=args.layers)  # Pass the number of layers to the model
 
 optimizer = optim.Adam(model.parameters(),
                        lr=args.lr, weight_decay=args.weight_decay)
@@ -148,8 +154,9 @@ def test():
           "F1 score= {:.4f}".format(f1))
     return loss_test.item(), acc_test.item(), precision, recall, f1
 
+
 # Early Stopping parameters
-patience = 10  # How many epochs to wait after last time test loss improved.
+patience = args.patience  # How many epochs to wait after last time test loss improved.
 patience_counter = 0  # Counter for Early Stopping
 
 # Train model
