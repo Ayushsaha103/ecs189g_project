@@ -9,6 +9,7 @@ from code.base_class.dataset import dataset
 import torch
 import numpy as np
 import scipy.sparse as sp
+import random
 
 class Dataset_Loader(dataset):
     data = None
@@ -44,6 +45,10 @@ class Dataset_Loader(dataset):
         """Load citation network dataset"""
         print('Loading {} dataset...'.format(self.dataset_name))
 
+        # Debug print:
+        node_file_path = "{}/node".format(self.dataset_source_folder_path)
+        print("Attempting to load node file from:", node_file_path)
+
         # load node data from file
         idx_features_labels = np.genfromtxt("{}/node".format(self.dataset_source_folder_path), dtype=np.dtype(str))
         features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
@@ -68,7 +73,6 @@ class Dataset_Loader(dataset):
         # the following train, test, val index are just examples, sample the train, test according to project requirements
 
         # generating lists of randomized indexes
-        import random
         idx_train, idx_test = [], []
         idx_val = []            # (unused)
         
