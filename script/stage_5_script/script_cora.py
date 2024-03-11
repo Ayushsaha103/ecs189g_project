@@ -11,6 +11,8 @@ from code.stage_5_code.pygcn.utils import accuracy
 from code.stage_5_code.pygcn.models import GCN
 from code.stage_5_code.GCN_cora import GCN_cora
 from code.stage_5_code.Dataset_Loader_Node_Classification import Dataset_Loader
+import random
+
 
 # Training settings
 parser = argparse.ArgumentParser()
@@ -33,6 +35,25 @@ parser.add_argument('--hidden', type=int, default=16,
                     help='Number of hidden units.')
 parser.add_argument('--dropout', type=float, default=0.5,
                     help='Dropout rate (1 - keep probability).')
+
+
+# Set a fixed random seed for reproducibility
+def set_seed(seed_value):
+    random.seed(seed_value)  # Python's built-in random module
+    np.random.seed(seed_value)  # Numpy library
+    torch.manual_seed(seed_value)  # PyTorch library
+    os.environ['PYTHONHASHSEED'] = str(seed_value)  # Environment variable
+
+    # If using a CUDA-enabled GPU, the following two lines are needed
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed_value)
+        torch.cuda.manual_seed_all(seed_value)  # For multi-GPU setups
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
+# Set the seed value
+set_seed(42)  # You can choose any number you prefer for the seed
 
 # Set hyperparameters
 parser.set_defaults(lr=0.01)
@@ -127,7 +148,6 @@ def test():
           "F1 score= {:.4f}".format(f1))
     return loss_test.item(), acc_test.item(), precision, recall, f1
 
-
 # Early Stopping parameters
 patience = 10  # How many epochs to wait after last time test loss improved.
 patience_counter = 0  # Counter for Early Stopping
@@ -166,6 +186,7 @@ def train_model():
 
     print("Optimization Finished!")
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+
 
 # Call train_model instead of the for loop
 train_model()
