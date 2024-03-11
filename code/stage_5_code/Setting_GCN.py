@@ -35,6 +35,6 @@ class Setting_GCN(setting):
         self.method.data = {'train': {'feature': features, 'adj': adj, 'label': labels, 'indx':idx_train},
                             'test': {'feature': features, 'adj': adj, 'label': labels, 'indx':idx_test}}
 
-        learned_result = self.method.run(0)
+        learned_result = self.method.run()
 
         return learned_result

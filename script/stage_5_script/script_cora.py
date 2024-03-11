@@ -3,20 +3,12 @@ from code.stage_5_code.Method_GCN import GCN
 from code.stage_5_code.Result_Saver import Result_Saver
 from code.stage_5_code.Setting_GCN import Setting_GCN
 from code.stage_5_code.Evaluate_Metrics import Evaluate_Metrics
-import numpy as np
-import torch
+
 from torch import nn
 import itertools
 import os
-from code.stage_5_code.pygcn.utils import load_data, accuracy
-# from code.stage_5_code.pygcn.models import GCN
-import time
-import argparse
 import numpy as np
-
 import torch
-import torch.nn.functional as F
-import torch.optim as optim
 import warnings
 
 # Filter out the specific warning
@@ -80,6 +72,7 @@ for config in config_permutations:
 
 
     method_obj = GCN('GCN', '',
+                     result_obj.result_destination_folder_path,
                      nfeat=features.shape[1],
                      nhid=config['hidden_units'],
                      nclass=labels.max().item() + 1,
@@ -96,6 +89,6 @@ for config in config_permutations:
     setting_obj.print_setup_summary()
     result = setting_obj.load_run_save_evaluate()
     print('************ Overall Performance ************')
-    print(f'Accuracy: {result["accuracy"]}')
+    print(f'Accuracy: {result["accuracy"]:.2f}')
     print('************ Finish ************')
     # ------------------------------------------------------

@@ -62,7 +62,7 @@ for config in config_permutations:
     idx_test = D['train_test_val']['idx_test']
 
     result_obj = Result_Saver('saver', '')
-    result_obj.result_destination_folder_path = os.path.join('../../result/stage_5_result/CORA')
+    result_obj.result_destination_folder_path = os.path.join('../../result/stage_5_result/PUBMED')
 
     if not os.path.exists(result_obj.result_destination_folder_path):
         os.makedirs(result_obj.result_destination_folder_path)
@@ -71,6 +71,7 @@ for config in config_permutations:
 
 
     method_obj = GCN('GCN', '',
+                     result_obj.result_destination_folder_path,
                      nfeat=features.shape[1],
                      nhid=config['hidden_units'],
                      nclass=labels.max().item() + 1,
@@ -87,6 +88,6 @@ for config in config_permutations:
     setting_obj.print_setup_summary()
     result = setting_obj.load_run_save_evaluate()
     print('************ Overall Performance ************')
-    print(f'Accuracy: {result["accuracy"]}')
+    print(f'Accuracy: {result["accuracy"]:.2f}')
     print('************ Finish ************')
     # ------------------------------------------------------

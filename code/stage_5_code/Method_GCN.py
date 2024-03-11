@@ -7,14 +7,11 @@ Concrete MethodModule class for a specific learning MethodModule
 
 from code.base_class.method import method
 from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
-from sklearn.metrics import precision_score, recall_score, f1_score
 import torch
-from torch import nn
-import numpy as np
+
 import matplotlib.pyplot as plt
 import os
-from torchvision import utils
-import itertools
+
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
@@ -31,21 +28,15 @@ class GCN(method, nn.Module):
     optimizer = torch.optim.Adam
     device = 'cpu'
 
-    # it defines the the MLP model architecture, e.g.,
-    # how many layers, size of variables in each layer, activation function, etc.
-    # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
-    from torch_geometric.nn import GCNConv
 
-
-    # def __init__(self, mName, mDescription, save_dir, nfeat, nhid, nclass, dropout,
-    #              learning_rate, batch_size, loss_function,
-    #              optimizer, max_epoch, output_layer_input_channels):
-    def __init__(self, mName, mDescription,  nfeat, nhid, nclass, dropout):
+    def __init__(self, mName, mDescription, dir, nfeat, nhid, nclass, dropout):
 
         super(GCN, self).__init__()
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
+        self.save_dir = dir
         self.metrics_evaluator = Evaluate_Metrics('evaluator', '')
+
         self.conv1 = GCNConv(nfeat, nhid)
         self.conv2 = GCNConv(nhid, nhid)
         self.conv3 = GCNConv(nhid, nhid)
@@ -63,8 +54,6 @@ class GCN(method, nn.Module):
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.conv3(x, adj)
         return F.log_softmax(x, dim=1)
-
-
 
     def train(self, feature, adj, label, indx, test_data=None):
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
@@ -84,6 +73,7 @@ class GCN(method, nn.Module):
         self.precision_scores = []
         self.recall_scores = []
         self.f1_scores = []
+        self.test_data_losses = []
         self.test_data_accuracies = []
         self.test_data_precisions = []
         self.test_data_recalls = []
@@ -128,107 +118,88 @@ class GCN(method, nn.Module):
                 with torch.no_grad():
                     test_data_y_pred = self.forward(test_data['feature'], test_data['adj']).cpu()
                     test_data_y_true = test_data['label'].cpu()
+                    test_loss = loss_function(test_data_y_pred[indx], test_data_y_true[indx])
                     self.metrics_evaluator.data = {'true_y': test_data_y_true[test_data['indx']], 'pred_y': test_data_y_pred[test_data['indx']].max(1)[1]}
                     accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
+                    self.test_data_losses.append(test_loss)
                     self.test_data_accuracies.append(accuracy)
                     self.test_data_precisions.append(precision)
                     self.test_data_recalls.append(recall)
                     self.test_data_f1s.append(f1)
 
             if epoch % 5 == 0:
-                print('Epoch:', epoch, 'Accuracy:', epoch_acc, 'Loss:', epoch_loss, end=' | ',)
-                # print('\n')
                 if test_data:
-                    print('Test Data Acc:', self.test_data_accuracies[-1], 'f1:', self.test_data_f1s[-1], 'recall:',
-                          self.test_data_recalls[-1], 'precision:', self.test_data_precisions[-1])
+                    print(f"Epoch: {epoch} | Accuracy: {epoch_acc:.2f} | Loss: {epoch_loss:.2f} | "
+                          f"Test Loss: {self.test_data_losses[-1]:.2f} | "
+                          f"Test Data Acc: {self.test_data_accuracies[-1]:.2f} | "
+                          f"f1: {self.test_data_f1s[-1]:.2f} | "
+                          f"recall: | {self.test_data_recalls[-1]:.2f} | "
+                          f"precision: {self.test_data_precisions[-1]:.2f}")
 
-    # def save_and_show_graph(self, fold_count: int):
-    #     # After loop, plot recorded metrics
-    #     fig = plt.figure(figsize=(20, 10))
-    #     fig.suptitle(f'LR: {self.learning_rate} | Batch Size: {self.batch_size}'
-    #                  f' | Loss: {self.loss_function} | Optimizer: {self.optimizer}', fontsize=16)
-    #
-    #     plt.subplot(3, 3, 1)
-    #     plt.plot(self.train_losses, label="Training Loss", color='b')
-    #     plt.title('Train Loss over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Loss')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 2)
-    #     plt.plot(self.train_accuracies, label="Training Accuracy", color='g')
-    #     plt.title('Train Accuracy over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Accuracy')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 3)
-    #     plt.plot(self.test_data_accuracies, label="Test File Accuracy", color='r')
-    #     plt.title('Test File Accuracy over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Accuracy')
-    #     plt.legend()
-    #
-    #     # Plot for precision, recall, and F1 score
-    #     plt.subplot(3, 3, 4)
-    #     plt.plot(self.train_precisions, label="Training Precision", color='purple')
-    #     plt.title('Train Precision over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Precision')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 5)
-    #     plt.plot(self.train_recalls, label="Training Recall", color='orange')
-    #     plt.title('Train Recall over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Recall')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 6)
-    #     plt.plot(self.train_f1s, label="Training F1 Score", color='pink')
-    #     plt.title('Train F1 Score over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('F1 Score')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 7)
-    #     plt.plot(self.test_data_precisions, label="Test File Precision", color='purple')
-    #     plt.title('Test File Precision over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Precision')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 8)
-    #     plt.plot(self.test_data_recalls, label="Test File Recall", color='orange')
-    #     plt.title('Test File Recall over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('Recall')
-    #     plt.legend()
-    #
-    #     plt.subplot(3, 3, 9)
-    #     plt.plot(self.test_data_f1s, label="Test File F1 Score", color='pink')
-    #     plt.title('Test File F1 Score over time')
-    #     plt.xlabel('Epoch')
-    #     plt.ylabel('F1 Score')
-    #     plt.legend()
-    #
-    #     # Adjust params so subplots fit in figure area
-    #     plt.tight_layout(rect=(0, 0.03, 1, 0.95))
-    #
-    #     # Note: loss, accuracy plots generated here (nothing to be updated in search.py)
-    #     self.folder_path = os.path.join(self.save_dir, 'graphs/')
-    #     if not os.path.exists(self.folder_path):
-    #         os.makedirs(self.folder_path)
-    #     plt.savefig(os.path.join(self.folder_path, f'fold-{fold_count}.png'))
-    #     plt.show()
-    #
-    # def plot_first_conv_kernels(self, fold_count):
-    #     kernels = self.first_conv.weight.data.detach().clone().cpu()
-    #     kernels = kernels - kernels.min()
-    #     kernels = kernels / kernels.max()
-    #     filter_img = torchvision.utils.make_grid(kernels, nrow=10).permute(1, 2, 0).numpy()
-    #     plt.imshow(filter_img)
-    #     plt.imsave(os.path.join(self.folder_path, f'fold-{fold_count}-first-layer-kernels.png'), filter_img)
+    def save_and_show_graph(self, fold_count: int):
+        # After loop, plot recorded metrics
+        fig = plt.figure(figsize=(20, 10))
+        fig.suptitle(f'LR: {self.learning_rate}'
+                     f' | Loss: {self.loss_function} | Optimizer: {self.optimizer}', fontsize=16)
+
+        # Loss
+        plt.subplot(2, 3, 1)
+        plt.title('Loss over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+
+        plt.plot(self.train_losses, label="Training Loss", color='g')
+        plt.plot(self.test_data_losses, label="Testing Loss", color='r')
+        plt.legend()
+
+        # Accuracy
+        plt.subplot(2, 3, 2)
+        plt.title('Accuracy over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+
+        plt.plot(self.train_accuracies, label="Training Accuracy", color='g')
+        plt.plot(self.test_data_accuracies, label="Testing Accuracy", color='r')
+        plt.legend()
+
+        # Precision
+        plt.subplot(2, 3, 3)
+        plt.title('Precision over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Precision')
+
+        plt.plot(self.train_precisions, label="Training Precision", color='g')
+        plt.plot(self.test_data_precisions, label="Testing Precision", color='r')
+        plt.legend()
+
+        # Recall
+        plt.subplot(2, 3, 4)
+        plt.title('Recall over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('Recall')
+
+        plt.plot(self.train_recalls, label="Training Recall", color='g')
+        plt.plot(self.test_data_recalls, label="Testing Recall", color='r')
+        plt.legend()
+
+        # F1
+        plt.subplot(2, 3, 5)
+        plt.title('F1 Score over time')
+        plt.xlabel('Epoch')
+        plt.ylabel('F1 Score')
+
+        plt.plot(self.train_f1s, label="Training F1 Score", color='g')
+        plt.plot(self.test_data_f1s, label="TestingF1 Score", color='r')
+        plt.legend()
+
+        # Adjust params so subplots fit in figure area
+        plt.tight_layout(rect=(0, 0.03, 1, 0.95))
+        # Note: loss, accuracy plots generated here (nothing to be updated in search.py)
+        self.folder_path = os.path.join(self.save_dir, 'graphs/')
+        if not os.path.exists(self.folder_path):
+            os.makedirs(self.folder_path)
+        plt.savefig(os.path.join(self.folder_path, f'{fold_count}.png'))
+        plt.show()
 
     @torch.no_grad()
     def test(self, feature, adj, label, indx):
@@ -249,9 +220,10 @@ class GCN(method, nn.Module):
         self.apply(fn=weight_reset)
         self.train_accuracies = []
         self.train_losses = []
+        self.test_data_losses = []
 
 
-    def run(self, fold_count: int):
+    def run(self):
         print('method running...')
 
         self.reset()
@@ -259,17 +231,10 @@ class GCN(method, nn.Module):
         print('--start training...')
         self.train(self.data['train']['feature'], self.data['train']['adj'],  self.data['train']['label'], self.data['train']['indx'], self.data['test'])
         print('--saving graphs...')
-        # self.save_and_show_graph(fold_count)
+        self.save_and_show_graph(1)
         print('--start testing...')
         pred_y, accuracy, precision, recall, f1 = self.test(self.data['test']['feature'], self.data['test']['adj'],  self.data['test']['label'], self.data['test']['indx'])
-        # pred_y, accuracy, precision, recall, f1 = self.test(self.data['test']['feature'], self.data['test_data']['y'])
 
-        # self.plot_first_conv_kernels(fold_count)
-
-        # confusion_matrix = self.metrics_evaluator.generate_confusion_matrix()
-        # confusion_matrix.plot()
-        # plt.savefig(os.path.join(self.folder_path, f'fold-{fold_count}-cm.png'))
-        # plt.show()
         return {
             'pred_y': pred_y,
             'true_y': self.data['test']['label'],
