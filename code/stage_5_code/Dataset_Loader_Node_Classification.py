@@ -75,7 +75,7 @@ class Dataset_Loader(dataset):
         # generating lists of randomized indexes
         idx_train, idx_test = [], []
         idx_val = []            # (unused)
-        
+
         labels_list = labels.tolist()
         uniq_labels_list = list(set(labels_list))
         train_cnt, test_cnt = -1, -1
