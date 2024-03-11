@@ -34,6 +34,10 @@ parser.add_argument('--hidden', type=int, default=16,
 parser.add_argument('--dropout', type=float, default=0.5,
                     help='Dropout rate (1 - keep probability).')
 
+# Set hyperparameters
+parser.set_defaults(lr=0.01)
+parser.set_defaults(dropout=0.5)
+
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -124,36 +128,47 @@ def test():
     return loss_test.item(), acc_test.item(), precision, recall, f1
 
 
+# Early Stopping parameters
+patience = 10  # How many epochs to wait after last time test loss improved.
+patience_counter = 0  # Counter for Early Stopping
+
 # Train model
 def train_model():
+    # Initialize the minimum test loss for early stopping
+    test_loss_min = float('inf')
+
     t_total = time.time()
     for epoch in range(args.epochs):
-        train(epoch)
-        loss_test, acc_test, precision, recall, f1 = test()  # Call test here
-        test_losses.append(loss_test)                        # Save test metrics after each epoch
-        test_accuracies.append(acc_test)
-        test_precisions.append(precision)
-        test_recalls.append(recall)
-        test_f1_scores.append(f1)
+        train_loss, train_acc = train(epoch)
+        train_losses.append(train_loss)
+        train_accuracies.append(train_acc)
+
+        # Get the test loss for early stopping
+        test_loss, test_acc, test_precision, test_recall, test_f1 = test()
+        test_losses.append(test_loss)
+        test_accuracies.append(test_acc)
+        test_precisions.append(test_precision)
+        test_recalls.append(test_recall)
+        test_f1_scores.append(test_f1)
+
+        # Check if test loss improved
+        if test_loss < test_loss_min:
+            test_loss_min = test_loss
+            patience_counter = 0
+            # Save the model if you want
+            torch.save(model.state_dict(), 'best_model.pth')
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print("Stopping early due to no improvement in test loss.")
+            break
+
     print("Optimization Finished!")
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
 
-
-# Train model and test
-t_total = time.time()
-for epoch in range(args.epochs):
-    train_loss, train_acc = train(epoch)
-    train_losses.append(train_loss)
-    train_accuracies.append(train_acc)
-
-    test_loss, test_acc, test_precision, test_recall, test_f1 = test()
-    test_losses.append(test_loss)
-    test_accuracies.append(test_acc)
-    test_precisions.append(test_precision)
-    test_recalls.append(test_recall)
-    test_f1_scores.append(test_f1)
-print("Optimization Finished!")
-print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+# Call train_model instead of the for loop
+train_model()
 
 # Plotting
 # Plot training loss and accuracy
