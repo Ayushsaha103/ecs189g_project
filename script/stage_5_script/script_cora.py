@@ -7,8 +7,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score
-from code.stage_5_code.pygcn.utils import load_data, accuracy
+from code.stage_5_code.pygcn.utils import accuracy
 from code.stage_5_code.pygcn.models import GCN
+from code.stage_5_code.GCN_cora import GCN_cora
+from code.stage_5_code.Dataset_Loader_Node_Classification import Dataset_Loader
 
 # Training settings
 parser = argparse.ArgumentParser()
@@ -44,15 +46,27 @@ if args.cuda:
 data_path = "../../data/stage_5_data/cora"
 
 # Load data using load_data method
-adj, features, labels, idx_train, idx_test = load_data(path=data_path, dataset=args.dataset)
+# adj, features, labels, idx_train, idx_test = load_data(path=data_path, dataset=args.dataset)
+data_obj = Dataset_Loader(args.dataset, '')
+data_obj.dataset_source_folder_path = os.path.join(args.data_folder, args.dataset)
+data_obj.dataset_name = args.dataset
+D = data_obj.load()
+
+adj = D['graph']['utility']['A']
+features = D['graph']['X']
+labels = D['graph']['y']
+idx_train = D['train_test_val']['idx_train']
+idx_test = D['train_test_val']['idx_test']
 
 # Model and optimizer
-model = GCN(nfeat=features.shape[1],
-            nhid=args.hidden,
-            nclass=labels.max().item() + 1,
-            dropout=args.dropout)
+model = GCN_cora(nfeat=features.shape[1],
+                 nhid=args.hidden,
+                 nclass=labels.max().item() + 1,
+                 dropout_rate=args.dropout)
+
 optimizer = optim.Adam(model.parameters(),
                        lr=args.lr, weight_decay=args.weight_decay)
+
 
 if args.cuda:
     model.cuda()
@@ -98,7 +112,7 @@ def test():
     loss_test = F.nll_loss(output[idx_test], labels[idx_test])
     acc_test = accuracy(output[idx_test], labels[idx_test])
     preds = output[idx_test].max(1)[1].type_as(labels[idx_test])
-    precision = precision_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro')
+    precision = precision_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro', zero_division=0)
     recall = recall_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro')
     f1 = f1_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro')
     print("Test set results:",
