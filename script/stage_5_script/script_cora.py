@@ -1,21 +1,15 @@
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# citation:
-# credits to Thomas N. and Welling for the GCN model code:
-# @article{kipf2016semi,
-#   title={Semi-Supervised Classification with Graph Convolutional Networks},
-#   author={Kipf, Thomas N and Welling, Max},
-#   journal={arXiv preprint arXiv:1609.02907},
-#   year={2016}
-# }
-
-
-import sys
-sys.path.append("../../code/stage_5_code/")
-
+from code.stage_5_code.Dataset_Loader import Dataset_Loader
+from code.stage_5_code.Method_GCN import GCN
+from code.stage_5_code.Result_Saver import Result_Saver
+from code.stage_5_code.Setting_GCN import Setting_GCN
+from code.stage_5_code.Evaluate_Metrics import Evaluate_Metrics
+import numpy as np
+import torch
+from torch import nn
+import itertools
+import os
 from code.stage_5_code.pygcn.utils import load_data, accuracy
-from code.stage_5_code.pygcn.models import GCN
+# from code.stage_5_code.pygcn.models import GCN
 import time
 import argparse
 import numpy as np
@@ -23,126 +17,85 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import warnings
+
+# Filter out the specific warning
+warnings.filterwarnings("ignore", message="Converting sparse tensor to CSR format*")
+
+#################################################################################################################
+
+# ---- parameter section -------------------------------
+np.random.seed(2)
+torch.manual_seed(2)
+# ------------------------------------------------------
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-from code.stage_5_code.Dataset_Loader_Node_Classification import Dataset_Loader
+# ----model configs---
 
-data_obj = Dataset_Loader('cora', '')
-data_obj.dataset_source_folder_path = '../../data/stage_5_data/cora'
-data_obj.dataset_name = 'cora'
+configurations = {
+    'lr': [1e-2],
+    'loss_function': [nn.NLLLoss],
+    'optimizer': [
+        torch.optim.Adam
+    ],
+    "hidden_units": [64],
+    "dropout": [0.6],
+}
 
-D = data_obj.load()
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Training settings
-parser = argparse.ArgumentParser()
-parser.add_argument('--no-cuda', action='store_true', default=False,
-                    help='Disables CUDA training.')
-parser.add_argument('--fastmode', action='store_true', default=False,
-                    help='Validate during training pass.')
-parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-parser.add_argument('--epochs', type=int, default=200,
-                    help='Number of epochs to train.')
-parser.add_argument('--lr', type=float, default=0.01,
-                    help='Initial learning rate.')
-parser.add_argument('--weight_decay', type=float, default=5e-4,
-                    help='Weight decay (L2 loss on parameters).')
-parser.add_argument('--hidden', type=int, default=16,
-                    help='Number of hidden units.')
-parser.add_argument('--dropout', type=float, default=0.5,
-                    help='Dropout rate (1 - keep probability).')
-
-args = parser.parse_args()
-args.cuda = not args.no_cuda and torch.cuda.is_available()
-
-np.random.seed(args.seed)
-torch.manual_seed(args.seed)
-if args.cuda:
-    torch.cuda.manual_seed(args.seed)
+# params
+max_epoch = 50
 #
-# # Load data
-# adj, features, labels, idx_train, idx_val, idx_test = load_data()
-
-adj = D['graph']['utility']['A']
-features = D['graph']['X']
-labels = D['graph']['y']
-idx_train = D['train_test_val']['idx_train']
-# idx_val = D['train_test_val']['idx_val']
-idx_test = D['train_test_val']['idx_test']
-
-# Model and optimizer
-model = GCN(nfeat=features.shape[1],
-            nhid=args.hidden,
-            nclass=labels.max().item() + 1,
-            dropout=args.dropout)
-optimizer = optim.Adam(model.parameters(),
-                       lr=args.lr, weight_decay=args.weight_decay)
-
-if args.cuda:
-    model.cuda()
-    features = features.cuda()
-    adj = adj.cuda()
-    labels = labels.cuda()
-    idx_train = idx_train.cuda()
-    # idx_val = idx_val.cuda()
-    idx_test = idx_test.cuda()
 
 
-def train(epoch):
-    t = time.time()
-    model.train()
-    optimizer.zero_grad()
-    output = model(features, adj)
-    loss_train = F.nll_loss(output[idx_train], labels[idx_train])
-    acc_train = accuracy(output[idx_train], labels[idx_train])
-    loss_train.backward()
-    optimizer.step()
+keys, values = zip(*configurations.items())
+config_permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    if not args.fastmode:
-        # Evaluate validation set performance separately,
-        # deactivates dropout during validation run.
-        model.eval()
-        output = model(features, adj)
+for config in config_permutations:
 
-    # loss_val = F.nll_loss(output[idx_val], labels[idx_val])
-    # acc_val = accuracy(output[idx_val], labels[idx_val])
-    print('Epoch: {:04d}'.format(epoch+1),
-          'loss_train: {:.4f}'.format(loss_train.item()),
-          'acc_train: {:.4f}'.format(acc_train.item()),
-          # 'loss_val: {:.4f}'.format(loss_val.item()),
-          # 'acc_val: {:.4f}'.format(acc_val.item()),
-          'time: {:.4f}s'.format(time.time() - t))
+    print('Config: ', config)
 
+    # ---- objection initialization setction ---------------
+    data_obj = Dataset_Loader('cora', '')
+    data_obj.dataset_source_folder_path = '../../data/stage_5_data/cora'
+    data_obj.dataset_name = 'cora'
+    D = data_obj.load()
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def test():
-    model.eval()
-    output = model(features, adj)
-    loss_test = F.nll_loss(output[idx_test], labels[idx_test])
-    acc_test = accuracy(output[idx_test], labels[idx_test])
-    print("Test set results:",
-          "loss= {:.4f}".format(loss_test.item()),
-          "accuracy= {:.4f}".format(acc_test.item()))
+    # # Load data
+    # adj, features, labels, idx_train, idx_val, idx_test = load_data()
+
+    adj = D['graph']['utility']['A']
+    features = D['graph']['X']
+    labels = D['graph']['y']
+    idx_train = D['train_test_val']['idx_train']
+    idx_test = D['train_test_val']['idx_test']
+
+    result_obj = Result_Saver('saver', '')
+    result_obj.result_destination_folder_path = os.path.join('../../result/stage_5_result/CORA')
+
+    if not os.path.exists(result_obj.result_destination_folder_path):
+        os.makedirs(result_obj.result_destination_folder_path)
+
+    result_obj.result_destination_file_name = 'GCN_prediction_result'
 
 
-# Train model
-t_total = time.time()
-for epoch in range(args.epochs):
-    train(epoch)
-print("Optimization Finished!")
-print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+    method_obj = GCN('GCN', '',
+                     nfeat=features.shape[1],
+                     nhid=config['hidden_units'],
+                     nclass=labels.max().item() + 1,
+                     dropout=config['dropout'])
 
-# Testing
-test()
+    setting_obj = Setting_GCN()
 
+    evaluate_obj = Evaluate_Metrics('metrics', '')
+    # ------------------------------------------------------
 
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# citation:
-# credits to Thomas N. and Welling for the GCN model code:
-# @article{kipf2016semi,
-#   title={Semi-Supervised Classification with Graph Convolutional Networks},
-#   author={Kipf, Thomas N and Welling, Max},
-#   journal={arXiv preprint arXiv:1609.02907},
-#   year={2016}
-# }
+    # ---- running section ---------------------------------
+    print('************ Start ************')
+    setting_obj.prepare(data_obj, method_obj, result_obj, evaluate_obj)
+    setting_obj.print_setup_summary()
+    result = setting_obj.load_run_save_evaluate()
+    print('************ Overall Performance ************')
+    print(f'Accuracy: {result["accuracy"]}')
+    print('************ Finish ************')
+    # ------------------------------------------------------
