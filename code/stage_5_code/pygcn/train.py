@@ -1,25 +1,21 @@
 from __future__ import division
 from __future__ import print_function
-
 import time
 import argparse
 import numpy as np
-
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-
-from sklearn.metrics import precision_recall_fscore_support
-#from torch.utils.data import DataLoader
-from code.stage_5_code.Dataset_Loader_Node_Classification import Dataset_Loader
-from pygcn.models import GCN
+from .utils import load_data, accuracy
+from .models import GCN
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 # Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
-# parser.add_argument('--fastmode', action='store_true', default=False,
-#                     help='Validate during training pass.')
+parser.add_argument('--fastmode', action='store_true', default=False,
+                    help='Validate during training pass.')
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
 parser.add_argument('--epochs', type=int, default=200,
                     help='Number of epochs to train.')
@@ -41,15 +37,7 @@ if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 # Load data
-#adj, features, labels, idx_train, idx_val, idx_test = load_data()
-dataset_loader = Dataset_Loader(dName='cora', dDescription='Cora Dataset')
-data = dataset_loader.load()
-adj = data['graph']['utility']['A']
-features = data['graph']['X']
-labels = data['graph']['y']
-idx_train = data['train_test_val']['idx_train']
-idx_val = data['train_test_val']['idx_val']
-idx_test = data['train_test_val']['idx_test']
+adj, features, labels, idx_train, idx_val, idx_test = load_data()
 
 # Model and optimizer
 model = GCN(nfeat=features.shape[1],
@@ -75,57 +63,49 @@ def train(epoch):
     optimizer.zero_grad()
     output = model(features, adj)
     loss_train = F.nll_loss(output[idx_train], labels[idx_train])
-    #acc_train = accuracy(output[idx_train], labels[idx_train])
+    acc_train = accuracy(output[idx_train], labels[idx_train])
     loss_train.backward()
     optimizer.step()
 
-    # if not args.fastmode:
-    #     # Evaluate validation set performance separately,
-    #     # deactivates dropout during validation run.
-    #     model.eval()
-    #     output = model(features, adj)
+    if not args.fastmode:
+        # Evaluate validation set performance separately,
+        # deactivates dropout during validation run.
+        model.eval()
+        output = model(features, adj)
 
-    if args.cuda:
-        torch.cuda.synchronize()
-
-    # Evaluate metrics
-    model.eval()
-    output = model(features, adj)
-    predicts = output.max(1)[1].type_as(labels)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels[idx_train].cpu(), predicts[idx_train].cpu(),
-                                                               average='micro')
-    acc_train = predicts[idx_train].eq(labels[idx_train]).double().sum() / len(idx_train)
-
-
-    # loss_val = F.nll_loss(output[idx_val], labels[idx_val])
-    # acc_val = accuracy(output[idx_val], labels[idx_val])
+    loss_val = F.nll_loss(output[idx_val], labels[idx_val])
+    acc_val = accuracy(output[idx_val], labels[idx_val])
     print('Epoch: {:04d}'.format(epoch+1),
           'loss_train: {:.4f}'.format(loss_train.item()),
-          'accuracy_train: {:.4f}'.format(acc_train.item()),
-          'precision_train: {:.4f}'.format(precision),
-          'recall_train: {:.4f}'.format(recall),
-          'f1_train: {:.4f}'.format(f1),
+          'acc_train: {:.4f}'.format(acc_train.item()),
+          'loss_val: {:.4f}'.format(loss_val.item()),
+          'acc_val: {:.4f}'.format(acc_val.item()),
           'time: {:.4f}s'.format(time.time() - t))
 
+
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 def test():
     model.eval()
     output = model(features, adj)
+    loss_test = F.nll_loss(output[idx_test], labels[idx_test])
+    acc_test = accuracy(output[idx_test], labels[idx_test])
 
-    #loss_test = F.nll_loss(output[idx_test], labels[idx_test])
-    #acc_test = accuracy(output[idx_test], labels[idx_test])
+    # Get predictions
+    preds = output.max(1)[1].type_as(labels[idx_test])
 
-    preds = output.max(1)[1].type_as(labels)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels[idx_test].cpu(), preds[idx_test].cpu(), average='micro')
-    acc_test = preds[idx_test].eq(labels[idx_test]).double().sum() / len(idx_test)
+    # Calculate precision, recall, and F1 score
+    precision = precision_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro')
+    recall = recall_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro')
+    f1 = f1_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro')
 
-
+    # Print results
     print("Test set results:",
-          "loss= {:.4f}".format(F.nll_loss(output[idx_test], labels[idx_test]).item()),
+          "loss= {:.4f}".format(loss_test.item()),
           "accuracy= {:.4f}".format(acc_test.item()),
           "precision= {:.4f}".format(precision),
           "recall= {:.4f}".format(recall),
-          "f1= {:.4f}".format(f1))
+          "F1 score= {:.4f}".format(f1))
 
 
 # Train model
