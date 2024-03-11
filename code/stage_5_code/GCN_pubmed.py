@@ -1,21 +1,29 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-import sys
-sys.path.append("../")
-from pygcn.layers import GraphConvolution
+from .pygcn.layers import GraphConvolution
 
 
 class GCN_pubmed(nn.Module):
-    def __init__(self, nfeat, nhid, nclass, dropout):
+    def __init__(self, nfeat, nhid, nclass, dropout_rate, layers):
         super(GCN_pubmed, self).__init__()
 
-        self.gc1 = GraphConvolution(nfeat, nhid)
-        self.gc2 = GraphConvolution(nhid, nclass)
-        self.dropout = dropout
+        self.layers = nn.ModuleList()
+        self.layers.append(GraphConvolution(nfeat, nhid))  # First layer
+
+        # If more than 2 layers, add middle layers
+        for i in range(1, layers - 1):
+            self.layers.append(GraphConvolution(nhid, nhid))
+
+        self.layers.append(GraphConvolution(nhid, nclass))  # Last layer
+
+        # Dropout rate
+        self.dropout_rate = dropout_rate
 
     def forward(self, x, adj):
-        x = F.relu(self.gc1(x, adj))
-        x = F.dropout(x, self.dropout, training=self.training)
-        x = self.gc2(x, adj)
+        for i, layer in enumerate(self.layers):
+            x = layer(x, adj)
+            if i < len(self.layers) - 1:
+                x = F.relu(x)
+                x = F.dropout(x, self.dropout_rate, training=self.training)
         return F.log_softmax(x, dim=1)

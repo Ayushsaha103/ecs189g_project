@@ -182,8 +182,6 @@ def train_model():
         if test_loss < test_loss_min:
             test_loss_min = test_loss
             patience_counter = 0
-            # Save the model if you want
-            torch.save(model.state_dict(), 'best_model.pth')
         else:
             patience_counter += 1
 
@@ -199,25 +197,29 @@ def train_model():
 train_model()
 
 # Plotting
+fig, axs = plt.subplots(1, 2, figsize=(20, 8))  # Keep the figsize to make plots larger
+fig.suptitle(f'Dataset: {args.dataset} | LR: {args.lr} | Loss: NLLLoss | Optimizer: Adam', fontsize=16)
+
 # Plot training loss and accuracy
-plt.figure(figsize=(12, 5))
-plt.subplot(1, 2, 1)
-plt.plot(train_losses, label='Train Loss')
-plt.plot(train_accuracies, label='Train Accuracy')
-plt.title('Training Loss & Accuracy')
-plt.xlabel('Epoch')
-plt.legend()
+axs[0].plot(train_losses, label='Train Loss')
+axs[0].plot(train_accuracies, label='Train Accuracy')
+axs[0].set_title('Training Loss & Accuracy')
+axs[0].set_xlabel('Epoch')
+axs[0].legend()
 
 # Plot testing metrics
-plt.subplot(1, 2, 2)
-plt.plot(test_losses, label='Test Loss')
-plt.plot(test_accuracies, label='Test Accuracy')
-plt.plot(test_precisions, label='Test Precision')
-plt.plot(test_recalls, label='Test Recall')
-plt.plot(test_f1_scores, label='Test F1 Score')
-plt.title('Testing Metrics')
-plt.xlabel('Epoch')
-plt.legend()
+axs[1].plot(test_losses, label='Test Loss')
+axs[1].plot(test_accuracies, label='Test Accuracy')
+axs[1].plot(test_precisions, label='Test Precision')
+axs[1].plot(test_recalls, label='Test Recall')
+axs[1].plot(test_f1_scores, label='Test F1 Score')
+axs[1].set_title('Testing Metrics')
+axs[1].set_xlabel('Epoch')
+axs[1].legend()
 
-plt.tight_layout()
+# Adjust the layout to make room for the suptitle and prevent overlap
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+# Reduce horizontal space between the plots
+plt.subplots_adjust(wspace=0.1)  # Reduced wspace value
+
 plt.show()

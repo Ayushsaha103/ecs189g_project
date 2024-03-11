@@ -117,11 +117,3 @@ class Dataset_Loader(dataset):
         train_test_val = {'idx_train': idx_train, 'idx_test': idx_test, 'idx_val': idx_val}
         graph = {'node': idx_map, 'edge': edges, 'X': features, 'y': labels, 'utility': {'A': adj, 'reverse_idx': reverse_idx_map}}
         return {'graph': graph, 'train_test_val': train_test_val}
-
-        # # dont remove the below lines! - for ayush's reference:
-        # D['graph']['utility']['A']
-        # D['graph']['X']
-        # D['graph']['y']
-        # D['train_test_val']['idx_train']
-        # D['train_test_val']['idx_val']
-        # D['train_test_val']['idx_test']
