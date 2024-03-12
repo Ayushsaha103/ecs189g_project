@@ -6,30 +6,32 @@ Concrete MethodModule class for a specific learning MethodModule
 # License: TBD
 
 from code.base_class.method import method
-from code.stage_3_code.Evaluate_Metrics import Evaluate_Metrics
+from code.stage_5_code.Evaluate_Metrics import Evaluate_Metrics
 import torch
-
+from .pygcn.layers import GraphConvolution
 import matplotlib.pyplot as plt
 import os
-
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
+from code.stage_5_code.pygcn.utils import accuracy
 from torch_geometric.nn import GCNConv
-
-
+# np.random.seed(42)
+# torch.manual_seed(42)
+# np.random.seed(42)
 class GCN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 50
+    max_epoch = 200
     # it defines the learning rate for gradient descent based optimizer for model learning
-    learning_rate = 1e-2
+    learning_rate = 0.005
     save_dir = ''
     loss_function = nn.NLLLoss
     optimizer = torch.optim.Adam
     device = 'cpu'
 
 
-    def __init__(self, mName, mDescription, dir, nfeat, nhid, nclass, dropout):
+    def __init__(self, mName, mDescription, dir, nfeat, nhid, nclass, dropout_rate, layers):
 
         super(GCN, self).__init__()
         method.__init__(self, mName, mDescription)
@@ -37,28 +39,30 @@ class GCN(method, nn.Module):
         self.save_dir = dir
         self.metrics_evaluator = Evaluate_Metrics('evaluator', '')
 
-        self.conv1 = GCNConv(nfeat, nhid)
-        self.conv2 = GCNConv(nhid, nhid)
-        self.conv3 = GCNConv(nhid, nhid)
-        self.conv4 = GCNConv(nhid, nhid)
-        self.conv5 = GCNConv(nhid, nhid)
-        self.conv6 = GCNConv(nhid, nhid)
-        self.conv7 = GCNConv(nhid, nhid)
-        self.conv8 = GCNConv(nhid, nclass)
-        self.dropout = dropout
+        self.layers = nn.ModuleList()
+        self.layers.append(GraphConvolution(nfeat, nhid))  # First layer
+        # self.layers.append(GCNConv(nfeat, nhid))  # First layer
+        # If more than 2 layers, add middle layers
+        for i in range(1, layers - 1):
+            self.layers.append(GraphConvolution(nhid, nhid))
+            # self.layers.append(GCNConv(nhid, nhid))
+        self.layers.append(GraphConvolution(nhid, nclass))  # Last layer
+        # self.layers.append(GCNConv(nhid, nclass))  # Last layer
+        # Dropout rate
+        self.dropout_rate = dropout_rate
 
     def forward(self, x, adj):
-        x = F.relu(self.conv1(x, adj))
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        x = F.relu(self.conv2(x, adj))
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.conv3(x, adj)
+        for i, layer in enumerate(self.layers):
+            x = layer(x, adj)
+            if i < len(self.layers) - 1:
+                x = F.relu(x)
+                x = F.dropout(x, self.dropout_rate, training=self.training)
         return F.log_softmax(x, dim=1)
 
     def train(self, feature, adj, label, indx, test_data=None):
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
-        optimizer = self.optimizer(self.parameters(), lr=self.learning_rate)
-        # check here for the nn.CrossEntropyLoss doc: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
+        optimizer = self.optimizer(self.parameters(), lr=self.learning_rate, weight_decay=5e-4)
+
         loss_function = self.loss_function()
         # for training accuracy investigation purpose
 
@@ -85,7 +89,6 @@ class GCN(method, nn.Module):
             epoch_precision = 0
             epoch_recall = 0
             epoch_f1 = 0
-            # num_batches = np.ceil(X.shape[0] / self.batch_size)
 
             y_pred = self.forward(feature, adj)
             y_true = label
@@ -99,6 +102,7 @@ class GCN(method, nn.Module):
             with torch.no_grad():
                 self.metrics_evaluator.data = {'true_y': y_true[indx].cpu(), 'pred_y': y_pred[indx].max(1)[1].cpu()}
                 curr_accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
+                curr_accuracy = accuracy(y_pred[indx], y_true[indx])
                 epoch_acc += curr_accuracy
                 epoch_precision += precision
                 epoch_recall += recall
@@ -116,25 +120,27 @@ class GCN(method, nn.Module):
             # Record test file accuracy
             if test_data:
                 with torch.no_grad():
-                    test_data_y_pred = self.forward(test_data['feature'], test_data['adj']).cpu()
-                    test_data_y_true = test_data['label'].cpu()
-                    test_loss = loss_function(test_data_y_pred[indx], test_data_y_true[indx])
-                    self.metrics_evaluator.data = {'true_y': test_data_y_true[test_data['indx']], 'pred_y': test_data_y_pred[test_data['indx']].max(1)[1]}
-                    accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
+                    test_index = test_data['indx']
+                    test_data_y_pred = self.forward(feature, adj)
+                    test_data_y_true = label.cpu()
+                    test_loss = loss_function(test_data_y_pred[test_index], test_data_y_true[test_index])
+                    self.metrics_evaluator.data = {'true_y': test_data_y_true[test_index], 'pred_y': test_data_y_pred[test_index].max(1)[1]}
+                    accuracy_, precision, recall, f1 = self.metrics_evaluator.evaluate()
+                    accuracy_ = accuracy(test_data_y_pred[test_index], test_data_y_true[test_index])
                     self.test_data_losses.append(test_loss)
-                    self.test_data_accuracies.append(accuracy)
+                    self.test_data_accuracies.append(accuracy_)
                     self.test_data_precisions.append(precision)
                     self.test_data_recalls.append(recall)
                     self.test_data_f1s.append(f1)
 
-            if epoch % 5 == 0:
-                if test_data:
-                    print(f"Epoch: {epoch} | Accuracy: {epoch_acc:.2f} | Loss: {epoch_loss:.2f} | "
-                          f"Test Loss: {self.test_data_losses[-1]:.2f} | "
-                          f"Test Data Acc: {self.test_data_accuracies[-1]:.2f} | "
-                          f"f1: {self.test_data_f1s[-1]:.2f} | "
-                          f"recall: | {self.test_data_recalls[-1]:.2f} | "
-                          f"precision: {self.test_data_precisions[-1]:.2f}")
+            # if epoch % 5 == 0:
+            if test_data:
+                print(f"Epoch: {epoch} | Accuracy: {epoch_acc:.2f} | Loss: {epoch_loss:.2f} | "
+                      f"Test Loss: {self.test_data_losses[-1]:.2f} | "
+                      f"Test Data Acc: {accuracy_:.2f} | "
+                      f"f1: {self.test_data_f1s[-1]:.2f} | "
+                      f"recall: | {self.test_data_recalls[-1]:.2f} | "
+                      f"precision: {self.test_data_precisions[-1]:.2f}")
 
     def save_and_show_graph(self, fold_count: int):
         # After loop, plot recorded metrics
@@ -206,8 +212,9 @@ class GCN(method, nn.Module):
         y_pred = self.forward(feature, adj).cpu()
         y_true = label.cpu()
         self.metrics_evaluator.data = {'true_y': y_true[indx], 'pred_y': y_pred[indx].max(1)[1]}
-        accuracy, precision, recall, f1 = self.metrics_evaluator.evaluate()
-        return y_pred, accuracy, precision, recall, f1
+        accuracy1, precision, recall, f1 = self.metrics_evaluator.evaluate()
+        accuracy1 = accuracy(y_pred[indx], y_true[indx])
+        return y_pred, accuracy1, precision, recall, f1
 
     def reset(self):
         @torch.no_grad()
@@ -233,12 +240,12 @@ class GCN(method, nn.Module):
         print('--saving graphs...')
         self.save_and_show_graph(1)
         print('--start testing...')
-        pred_y, accuracy, precision, recall, f1 = self.test(self.data['test']['feature'], self.data['test']['adj'],  self.data['test']['label'], self.data['test']['indx'])
+        pred_y, accuracy_, precision, recall, f1 = self.test(self.data['test']['feature'], self.data['test']['adj'],  self.data['test']['label'], self.data['test']['indx'])
 
         return {
             'pred_y': pred_y,
             'true_y': self.data['test']['label'],
-            'accuracy': accuracy,
+            'accuracy': accuracy_,
             'precision': precision,
             'recall': recall,
             'f1': f1

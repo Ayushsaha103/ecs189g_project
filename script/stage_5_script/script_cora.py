@@ -1,10 +1,12 @@
-from code.stage_5_code.Dataset_Loader import Dataset_Loader
+# from code.stage_5_code.Dataset_Loader import Dataset_Loader
+from code.stage_5_code.Dataset_Loader_Node_Classification import Dataset_Loader
 from code.stage_5_code.Method_GCN import GCN
 from code.stage_5_code.Result_Saver import Result_Saver
 from code.stage_5_code.Setting_GCN import Setting_GCN
 from code.stage_5_code.Evaluate_Metrics import Evaluate_Metrics
-
+from code.stage_5_code.GCN_cora import GCN_cora
 from torch import nn
+import torch.nn.functional as F
 import itertools
 import os
 import numpy as np
@@ -17,25 +19,27 @@ warnings.filterwarnings("ignore", message="Converting sparse tensor to CSR forma
 #################################################################################################################
 
 # ---- parameter section -------------------------------
-np.random.seed(2)
-torch.manual_seed(2)
+# np.random.seed(42)
+# torch.manual_seed(42)
 # ------------------------------------------------------
 
 
 # ----model configs---
 
 configurations = {
-    'lr': [1e-2],
-    'loss_function': [nn.NLLLoss],
+    'lr': [0.005],
+    'loss_function': [F.nll_loss],
+# 'loss_function': [nn.NLLLoss],
     'optimizer': [
         torch.optim.Adam
     ],
-    "hidden_units": [64],
-    "dropout": [0.6],
+    "hidden_units": [16],
+    "dropout": [0.7],
 }
 
 # params
-max_epoch = 50
+max_epoch = 200
+layers = 2
 #
 
 
@@ -76,7 +80,8 @@ for config in config_permutations:
                      nfeat=features.shape[1],
                      nhid=config['hidden_units'],
                      nclass=labels.max().item() + 1,
-                     dropout=config['dropout'])
+                     dropout_rate=config['dropout'],
+                     layers=layers)
 
     setting_obj = Setting_GCN()
 

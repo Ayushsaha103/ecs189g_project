@@ -10,6 +10,8 @@ import torch
 import numpy as np
 import scipy.sparse as sp
 
+np.random.seed(42)
+torch.manual_seed(42)
 class Dataset_Loader(dataset):
     data = None
     dataset_name = None
