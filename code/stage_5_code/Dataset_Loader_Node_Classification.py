@@ -42,6 +42,15 @@ class Dataset_Loader(dataset):
         onehot_labels = np.array(list(map(classes_dict.get, labels)), dtype=np.int32)
         return onehot_labels
 
+    def normalize_features(self, features):
+        """Row-normalize feature matrix"""
+        rowsum = np.array(features.sum(1))
+        r_inv = np.power(rowsum, -1).flatten()
+        r_inv[np.isinf(r_inv)] = 0.
+        r_mat_inv = sp.diags(r_inv)
+        features = r_mat_inv.dot(features)
+        return torch.FloatTensor(np.array(features.todense()))
+
     def load(self):
         """Load citation network dataset"""
         print('Loading {} dataset...'.format(self.dataset_name))
@@ -61,8 +70,12 @@ class Dataset_Loader(dataset):
         adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
         norm_adj = self.adj_normalize(adj + sp.eye(adj.shape[0]))
 
+        # Normalize features
+        features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
+        features = self.normalize_features(features)  # Normalize features
+
         # convert to pytorch tensors
-        features = torch.FloatTensor(np.array(features.todense()))
+        #features = torch.FloatTensor(np.array(features.todense()))
         labels = torch.LongTensor(np.where(onehot_labels)[1])
         adj = self.sparse_mx_to_torch_sparse_tensor(norm_adj)
 
@@ -87,11 +100,12 @@ class Dataset_Loader(dataset):
         elif self.dataset_name == 'pubmed':
             train_cnt = 20
             test_cnt = 200
-        # #---- cora-small is a toy dataset I hand crafted for debugging purposes ---
+        # #---- cora-small is a toy dataset I handcrafted for debugging purposes ---
         # elif self.dataset_name == 'cora-small':
         #     idx_train = range(5)
         #     idx_val = range(5, 10)
         #     idx_test = range(5, 10)
+
 
         # randomize idx_train, idx_test
         for uniq in uniq_labels_list:
