@@ -22,8 +22,8 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--fastmode', action='store_true', default=False,
                     help='Validate during training pass.')
-parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-parser.add_argument('--epochs', type=int, default=200,
+parser.add_argument('--seed', type=int, default=123, help='Random seed.')
+parser.add_argument('--epochs', type=int, default=2000,
                     help='Number of epochs to train.')
 parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
@@ -51,15 +51,15 @@ def set_seed(seed_value):
 
 
 # Set the seed value
-set_seed(42)
+set_seed(123)
 
 # Set hyperparameters
-parser.set_defaults(lr=0.0009)  # Fine-tuning the learning rate
-parser.set_defaults(weight_decay=8e-3)  # Adjusting weight decay
-parser.set_defaults(hidden=64)  # Increasing the number of hidden units
-parser.set_defaults(dropout=0.5)
-parser.set_defaults(layers=3)
-parser.set_defaults(patience=15)
+parser.set_defaults(lr=0.001)  # Fine-tuning the learning rate
+parser.set_defaults(weight_decay=0.09)  # Adjusting weight decay
+parser.set_defaults(hidden=12)  # Increasing the number of hidden units
+parser.set_defaults(dropout=0.6)
+parser.set_defaults(layers=2)
+parser.set_defaults(patience=150)
 parser.set_defaults(batch_size=32)
 
 args = parser.parse_args()
@@ -117,7 +117,7 @@ def train(epoch):
     model.train()
     optimizer.zero_grad()
     output = model(features, adj)
-    loss_train = F.nll_loss(output[idx_train], labels[idx_train])
+    loss_train = F.cross_entropy(output[idx_train], labels[idx_train])
     acc_train = accuracy(output[idx_train], labels[idx_train])
     loss_train.backward()
     optimizer.step()
@@ -136,7 +136,7 @@ def train(epoch):
 def test():
     model.eval()
     output = model(features, adj)
-    loss_test = F.nll_loss(output[idx_test], labels[idx_test])
+    loss_test = F.cross_entropy(output[idx_test], labels[idx_test])
     acc_test = accuracy(output[idx_test], labels[idx_test])
     preds = output[idx_test].max(1)[1].type_as(labels[idx_test])
     precision = precision_score(labels[idx_test].cpu().numpy(), preds.cpu().numpy(), average='macro', zero_division=0)
