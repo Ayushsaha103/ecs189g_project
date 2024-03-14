@@ -20,7 +20,6 @@ configurations = {
     'dropout': 0.5,
     'layers': 2,
     'patience': 50,
-    'batch_size': 64,
     'epochs': 2000
 }
 
