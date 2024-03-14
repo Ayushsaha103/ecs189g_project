@@ -14,14 +14,14 @@ torch.manual_seed(42)
 
 # ---- model and training configs ---
 configurations = {
-    'lr': 0.005,
-    'weight_decay': 1e-3,
-    'hidden': 16,
-    'dropout': 0.7,
+    'lr': 0.01,
+    'weight_decay': 5e-4,
+    'hidden': 32,
+    'dropout': 0.5,
     'layers': 2,
     'patience': 35,
-    'batch_size': 32,
-    'epochs': 200
+#    'batch_size': 32,
+    'epochs': 150
 }
 
 # ---- objection initialization section ---------------

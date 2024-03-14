@@ -14,14 +14,14 @@ torch.manual_seed(42)
 
 # ---- model and training configs ---
 configurations = {
-    'lr': 0.006,
-    'weight_decay': 4e-4,
-    'hidden': 128,
-    'dropout': 0.7,
+    'lr': 0.001,
+    'weight_decay': 5e-4,
+    'hidden': 32,
+    'dropout': 0.5,
     'layers': 2,
     'patience': 50,
     'batch_size': 64,
-    'epochs': 150
+    'epochs': 2000
 }
 
 
